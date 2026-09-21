@@ -5,6 +5,7 @@ import { SettingsView } from './SettingsView';
 import { PlannerView } from './PlannerView';
 import { SyllabusView } from './SyllabusView';
 import { SplashScreen } from './SplashScreen';
+import { Auth } from './Auth';
 import { useTimer } from './TimerContext';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { BookOpen, Target, LayoutDashboard, Settings, Play, Pause, Square, ChevronRight } from 'lucide-react';
@@ -12,7 +13,10 @@ import { BookOpen, Target, LayoutDashboard, Settings, Play, Pause, Square, Chevr
 const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState('');
   const [showSplash, setShowSplash] = useState(true);
+  
   const [activeTab, setActiveTab] = useState<'dashboard' | 'syllabus' | 'planner' | 'settings'>('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<'all' | 1 | 2>('all');
@@ -26,6 +30,11 @@ function App() {
     resumeTimer,
     stopAndSaveSession
   } = useTimer();
+
+  const handleLogin = (name: string) => {
+    setUserName(name);
+    setIsAuthenticated(true);
+  };
 
   const selectedSubject = useMemo(() => {
     if (!selectedSubjectId) return null;
@@ -57,9 +66,13 @@ function App() {
     setSelectedSubjectId(null);
   };
 
+  if (!isAuthenticated) {
+    return <Auth onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#131A22] text-[#FFFFFF] font-sans flex flex-col">
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen userName={userName} onComplete={() => setShowSplash(false)} />}
 
       {/* ── Top Navigation ── */}
       <header className="sticky top-0 z-50 w-full h-14 bg-[#1B2430]/85 backdrop-blur-md border-b border-[#2D3A4B]">

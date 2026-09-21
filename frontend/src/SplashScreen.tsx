@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'framer-motion';
 
-export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
+export const SplashScreen = ({ userName, onComplete }: { userName: string, onComplete: () => void }) => {
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    // Keep it on screen for ~1.5s, then start fading out
-    const timer1 = setTimeout(() => setIsExiting(true), 1500);
-    // Give it 500ms to fade out, then unmount (Total 2.0s)
-    const timer2 = setTimeout(() => onComplete(), 2000);
+    // Mount this overlay immediately. After exactly 3.5 seconds, animate opacity to 0
+    const timer1 = setTimeout(() => setIsExiting(true), 3500);
+    // Unmount after fade out (fade out is 0.5s)
+    const timer2 = setTimeout(() => onComplete(), 4000);
     return () => { clearTimeout(timer1); clearTimeout(timer2); };
   }, [onComplete]);
 
@@ -29,7 +29,7 @@ export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
   const shadowY = useTransform(smoothY, [-0.5, 0.5], [40, -40]);
   
   // Construct dynamic text shadow string
-  const textShadow = useMotionTemplate`${shadowX}px ${shadowY}px 30px rgba(0,0,0,0.9), 0 0 25px rgba(245,158,11,0.15)`;
+  const textShadow = useMotionTemplate`${shadowX}px ${shadowY}px 30px rgba(0,0,0,0.9), 0 0 40px rgba(245, 158, 11, 0.3)`;
 
   const handleMouseMove = (e: React.MouseEvent) => {
     // Normalize coordinates relative to window center between -0.5 and 0.5
@@ -45,7 +45,7 @@ export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
       initial={{ opacity: 1 }}
       animate={{ opacity: isExiting ? 0 : 1 }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050505] overflow-hidden"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0B0F19] overflow-hidden"
       style={{ perspective: 1200 }}
     >
       <motion.div 
@@ -56,27 +56,19 @@ export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
           transformStyle: 'preserve-3d'
         }}
       >
-        {/* The Degree Splash Glowing Aura */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="absolute inset-0 bg-amber-500/20 blur-[100px] rounded-full w-full h-[120%] -z-10 pointer-events-none"
-          style={{ transform: 'translateZ(-50px)' }}
-        />
-
         {/* Main 3D Text */}
         <motion.h1 
-          initial={{ opacity: 0, scale: 0.8, filter: 'blur(12px)' }}
+          initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
           animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }} // smooth spring-like easeOut
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-6xl md:text-[6.5rem] leading-none font-black tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-r from-[#F59E0B] to-[#FCD34D]"
           style={{ 
             transform: 'translateZ(80px)',
-            textShadow
+            textShadow,
+            fontFamily: "'Plus Jakarta Sans', sans-serif"
           }}
         >
-          CA Khushi Soni
+          CA {userName || 'Khushi Soni'}
         </motion.h1>
         
         {/* Bottom Subtitle Layer */}
@@ -87,7 +79,7 @@ export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
           style={{ transform: 'translateZ(40px)' }}
         >
           <p className="text-sm md:text-base font-medium text-slate-400/80 tracking-wide animate-pulse">
-            your StudiAudit dashboard is loading ..
+            your finalist preparation dashboard is loading ..
           </p>
         </motion.div>
 
