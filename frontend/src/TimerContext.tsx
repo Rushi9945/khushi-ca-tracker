@@ -61,13 +61,49 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Tick the timer every second if running
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (state.isRunning) {
       interval = setInterval(() => {
-        setState(prev => ({
-          ...prev,
-          elapsedTime: prev.elapsedTime + 1000
-        }));
+        setState(prev => {
+          const newElapsed = prev.elapsedTime + 1000;
+          const currentHourMark = Math.floor(newElapsed / 3600000);
+          const prevHourMark = Math.floor(prev.elapsedTime / 3600000);
+
+          if (currentHourMark > prevHourMark && currentHourMark > 0) {
+            // Play hourly chime
+            const chimeEnabled = localStorage.getItem('ascend_hour_chime_enabled') === 'true';
+            if (chimeEnabled) {
+              try {
+                const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                if (AudioCtx) {
+                  const ctx = new AudioCtx();
+                  const osc = ctx.createOscillator();
+                  const gain = ctx.createGain();
+                  
+                  osc.type = 'sine';
+                  osc.frequency.setValueAtTime(880, ctx.currentTime);
+                  osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
+                  
+                  gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+                  
+                  osc.connect(gain);
+                  gain.connect(ctx.destination);
+                  
+                  osc.start();
+                  osc.stop(ctx.currentTime + 1.5);
+                }
+              } catch (e) {
+                console.error("Audio chime failed", e);
+              }
+            }
+          }
+
+          return {
+            ...prev,
+            elapsedTime: newElapsed
+          };
+        });
       }, 1000);
     }
     return () => clearInterval(interval);

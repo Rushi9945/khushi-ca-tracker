@@ -39,7 +39,7 @@ function daysUntil(dateStr: string): number {
 const orderedSubjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 
 export const DashboardGraphs = () => {
-  const { startTimer, isRunning, activeSubject, activeChapter, pauseTimer } = useTimer();
+  const { startTimer, isRunning, activeSubject, activeChapter, pauseTimer, elapsedTime } = useTimer();
   const [sessions, setSessions] = useState<Session[]>(loadSessions);
   const [examDate, setExamDate] = useState<string | null>(loadExamDate);
 
@@ -80,17 +80,47 @@ export const DashboardGraphs = () => {
     return () => { window.removeEventListener('sessionSaved', reload); window.removeEventListener('examDateChanged', reload); clearInterval(iv); };
   }, []);
 
-  // ── Daily Target Progress Calculation ──
+  // ── 12-Hour Target Tracker & Pacing Engine ──
+  const { totalLoggedHoursToday, paceStatus, pctTarget } = useMemo(() => {
+    const todayStr = new Date().toDateString();
+    const todayBaseMins = sessions
+      .filter(s => new Date(s.timestamp).toDateString() === todayStr)
+      .reduce((a, s) => a + s.durationMinutes, 0);
+    
+    // Include active session
+    const activeMins = (isRunning && elapsedTime) ? (elapsedTime / 60000) : 0;
+    const totalHours = (todayBaseMins + activeMins) / 60;
+
+    const now = new Date();
+    const currentHour = now.getHours() + (now.getMinutes() / 60);
+    const expected = Math.max(0, Math.min(12, (currentHour - 7) * (12 / 15))); // 7AM to 10PM (15hrs)
+
+    let status = { text: '', isAhead: true };
+    if (totalHours >= expected) {
+      status = { text: '● On Track / Ahead of Pace', isAhead: true };
+    } else {
+      status = { text: `▲ Deficit: ${(expected - totalHours).toFixed(1)}h behind target pace`, isAhead: false };
+    }
+
+    return { totalLoggedHoursToday: totalHours, paceStatus: status, pctTarget: Math.min(100, (totalHours / 12) * 100) };
+  }, [sessions, isRunning, elapsedTime]);
+
+  // ── Daily Target Progress Calculation (Specific Chapter) ──
   const todayTargetProgress = useMemo(() => {
     if (!dailyTarget) return { currentMins: 0, targetMins: 0, pct: 0, isComplete: false };
     const todayStr = new Date().toDateString();
-    const currentMins = sessions
+    let currentMins = sessions
       .filter(s => new Date(s.timestamp).toDateString() === todayStr && s.subjectId === dailyTarget.subjectId && s.chapterId === dailyTarget.chapterId)
       .reduce((a, s) => a + s.durationMinutes, 0);
+    
+    if (isRunning && activeSubject?.id === dailyTarget.subjectId && activeChapter?.id === dailyTarget.chapterId) {
+       currentMins += (elapsedTime / 60000);
+    }
+    
     const targetMins = dailyTarget.targetHours * 60;
     const pct = Math.min(100, Math.round((currentMins / targetMins) * 100));
     return { currentMins, targetMins, pct, isComplete: currentMins >= targetMins };
-  }, [sessions, dailyTarget]);
+  }, [sessions, dailyTarget, isRunning, elapsedTime, activeSubject, activeChapter]);
 
   // ── Smart Revision Nudge (7-Day Deficit) ──
   const smartRevision = useMemo(() => {
@@ -147,9 +177,6 @@ export const DashboardGraphs = () => {
   const last7Total = last7.reduce((a, d) => a + d.hours, 0);
   const avgDaily = (last7Total / 7);
 
-  const todayStr = new Date().toDateString();
-  const todayMinutes = sessions.filter(s => new Date(s.timestamp).toDateString() === todayStr).reduce((a, s) => a + s.durationMinutes, 0);
-  const todayHours = (todayMinutes / 60);
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
   // Chart data extraction
@@ -176,6 +203,47 @@ export const DashboardGraphs = () => {
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
       
+      {/* ── 12-Hour Target Tracker (New) ── */}
+      <div className="bg-[#1B2430] border border-[#2D3A4B] rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+        
+        <div className="flex-1 w-full">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-white mb-1">12-Hour Daily Target</h2>
+              <p className="text-sm text-[#9CA3AF]">
+                {totalLoggedHoursToday.toFixed(1)} / 12.0 hrs · {Math.round(pctTarget)}%
+              </p>
+            </div>
+            
+            <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${paceStatus.isAhead ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+              {paceStatus.text}
+            </div>
+          </div>
+
+          <div className="flex gap-1.5 w-full">
+            {Array.from({ length: 12 }).map((_, i) => {
+              const blockFill = Math.max(0, Math.min(1, totalLoggedHoursToday - i));
+              const isActive = blockFill > 0 && blockFill < 1;
+              return (
+                <div key={i} className="flex-1 h-3.5 bg-[#131A22] rounded-sm border border-[#2D3A4B] overflow-hidden relative shadow-inner">
+                  <div 
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#FF6B00] to-[#FF9900] transition-all duration-300" 
+                    style={{ width: `${blockFill * 100}%` }}
+                  />
+                  {isActive && (
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-white/30 animate-[shimmer_2s_infinite]" 
+                      style={{ width: `${blockFill * 100}%` }} 
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* ── Row 1: Dual Target/Revision Engine ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         

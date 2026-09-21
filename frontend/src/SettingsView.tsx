@@ -302,6 +302,26 @@ export const SettingsView = () => {
               </div>
             )}
           </div>
+          
+          <div className="mt-6 pt-6 border-t border-[#2D3A4B]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-white mb-1">Hour Completion Chime</h4>
+                <p className="text-xs text-[#9CA3AF]">Play a subtle notification sound when an active study session crosses the hour mark.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  defaultChecked={localStorage.getItem('ascend_hour_chime_enabled') === 'true'}
+                  onChange={(e) => {
+                    localStorage.setItem('ascend_hour_chime_enabled', e.target.checked.toString());
+                  }}
+                />
+                <div className="w-11 h-6 bg-[#131A22] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#9CA3AF] peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF9900] border border-[#2D3A4B] peer-checked:border-[#FF9900]"></div>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
