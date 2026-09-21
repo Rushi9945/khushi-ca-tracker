@@ -14,8 +14,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,ttf}']
       },
       manifest: {
-        name: 'Ascend - CA Final Tracker',
-        short_name: 'Ascend',
+        name: 'StudiAudit - CA Final Tracker',
+        short_name: 'StudiAudit',
         theme_color: '#0B0F19',
         background_color: '#0B0F19',
         display: 'standalone',

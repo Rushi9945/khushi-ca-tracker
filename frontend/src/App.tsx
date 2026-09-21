@@ -65,7 +65,7 @@ function App() {
       <header className="sticky top-0 z-50 w-full h-14 bg-[#1B2430]/85 backdrop-blur-md border-b border-[#2D3A4B]">
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 shrink-0 cursor-pointer" onClick={navigateToDashboard}>
-            <span className="font-semibold text-lg tracking-tight">Ascend<span className="text-[#FF9900]">.</span></span>
+            <span className="font-semibold text-lg tracking-tight">StudiAudit<span className="text-[#FF9900]">.</span></span>
             <span className="hidden sm:inline text-xs px-2 py-0.5 rounded-full bg-[#FF9900]/10 text-[#FF9900] border border-[#FF9900]/20 font-medium">CA Final</span>
           </div>
 

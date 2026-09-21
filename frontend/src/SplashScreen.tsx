@@ -87,7 +87,7 @@ export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
           style={{ transform: 'translateZ(40px)' }}
         >
           <p className="text-sm md:text-base font-medium text-slate-400/80 tracking-wide animate-pulse">
-            your finalist preparation dashboard is loading ..
+            your StudiAudit dashboard is loading ..
           </p>
         </motion.div>
 

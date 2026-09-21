@@ -130,12 +130,12 @@ export const SettingsView = () => {
     const rangeStr = { today: 'Today', week: 'ThisWeek', month: 'ThisMonth', all: 'AllTime' }[exportRange];
     const dateStr = new Date().toISOString().split('T')[0];
     
-    generateExcel(sessionsRaw, progressRaw, notesRaw, `Ascend_Export_${rangeStr}_${dateStr}.xlsx`, cutoff);
+    generateExcel(sessionsRaw, progressRaw, notesRaw, `StudiAudit_Export_${rangeStr}_${dateStr}.xlsx`, cutoff);
   };
 
   const exportArchive = (archive: any) => {
     const safeName = archive.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    generateExcel(archive.data.sessions, archive.data.progress, archive.data.notes, `Ascend_Archive_${safeName}.xlsx`, 0);
+    generateExcel(archive.data.sessions, archive.data.progress, archive.data.notes, `StudiAudit_Archive_${safeName}.xlsx`, 0);
   };
 
   const executeArchiveAndReset = () => {
@@ -252,7 +252,7 @@ export const SettingsView = () => {
         window.location.reload();
       } catch (err) {
         console.error(err);
-        alert("Error parsing Excel file. Please ensure it is a valid Ascend backup.");
+        alert("Error parsing Excel file. Please ensure it is a valid StudiAudit backup.");
       }
     };
     reader.readAsArrayBuffer(file);
@@ -412,7 +412,7 @@ export const SettingsView = () => {
             <div>
               <h4 className="font-semibold text-white mb-1">Restore from Excel</h4>
               <p className="text-xs text-[#9CA3AF] leading-relaxed">
-                Upload a previously downloaded Ascend Excel file to restore your progress. This will overwrite current data.
+                Upload a previously downloaded StudiAudit Excel file to restore your progress. This will overwrite current data.
               </p>
             </div>
             <div className="mt-auto pt-4 border-t border-[#2D3A4B]/50">
