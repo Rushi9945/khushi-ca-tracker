@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Download, Upload, FileSpreadsheet, Calendar, Trash2, Database, AlertTriangle, X } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, Calendar, Trash2, Database, AlertTriangle, X, Sparkles } from 'lucide-react';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 
 export const SettingsView = () => {
@@ -322,6 +322,32 @@ export const SettingsView = () => {
               </label>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── AI Integrations ── */}
+      <div className="bg-[#1B2430] border border-[#2D3A4B] rounded-xl overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-[#2D3A4B]">
+          <h3 className="font-semibold text-lg flex items-center gap-2">
+            <Sparkles size={20} className="text-[#FF9900]" />
+            AI Coach Integrations
+          </h3>
+          <p className="text-sm text-[#9CA3AF] mt-1.5">
+            Connect your Gemini API Key to enable the fully context-aware Ascend AI Mentor.
+          </p>
+        </div>
+        <div className="p-6">
+          <label className="block text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">Gemini API Key</label>
+          <input
+            type="password"
+            placeholder="AIzaSy..."
+            defaultValue={localStorage.getItem('ascend_gemini_api_key') || ''}
+            onChange={(e) => {
+              if (e.target.value) localStorage.setItem('ascend_gemini_api_key', e.target.value);
+              else localStorage.removeItem('ascend_gemini_api_key');
+            }}
+            className="bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF9900]/60 focus:ring-1 focus:ring-[#FF9900]/30 transition w-full max-w-lg"
+          />
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { PlannerView } from './PlannerView';
 import { SyllabusView } from './SyllabusView';
 import { SplashScreen } from './SplashScreen';
 import { Auth } from './Auth';
+import { AiStudyManager } from './AiStudyManager';
 import { useTimer } from './TimerContext';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { BookOpen, Target, LayoutDashboard, Settings, Play, Pause, Square, ChevronRight } from 'lucide-react';
@@ -71,7 +72,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#131A22] text-[#FFFFFF] font-sans flex flex-col">
+    <div className="min-h-screen bg-[#131A22] text-[#FFFFFF] font-sans flex flex-col relative">
       {showSplash && <SplashScreen userName={userName} onComplete={() => setShowSplash(false)} />}
 
       {/* ── Top Navigation ── */}
@@ -203,6 +204,8 @@ function App() {
           )}
         </div>
       </main>
+      
+      <AiStudyManager />
     </div>
   );
 }
