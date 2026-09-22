@@ -10,7 +10,8 @@ export const SplashScreen = ({ userName, onComplete }: { userName: string, onCom
     // Unmount after fade out (fade out is 0.5s)
     const timer2 = setTimeout(() => onComplete(), 4000);
     return () => { clearTimeout(timer1); clearTimeout(timer2); };
-  }, [onComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Mouse tracking with framer-motion values
   const mouseX = useMotionValue(0);
