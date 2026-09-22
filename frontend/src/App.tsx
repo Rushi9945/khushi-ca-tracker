@@ -17,7 +17,9 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState('');
   const [userId, setUserId] = useState('');
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    return !sessionStorage.getItem('hasSeenSplash');
+  });
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'syllabus' | 'planner' | 'settings'>('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
@@ -75,7 +77,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#131A22] text-[#FFFFFF] font-sans flex flex-col relative">
-      {showSplash && <SplashScreen userName={userName} onComplete={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen userName={userName} onComplete={() => {
+        sessionStorage.setItem('hasSeenSplash', 'true');
+        setShowSplash(false);
+      }} />}
 
       {/* ── Top Navigation ── */}
       <header className="sticky top-0 z-50 w-full h-14 bg-[#1B2430]/85 backdrop-blur-md border-b border-[#2D3A4B]">

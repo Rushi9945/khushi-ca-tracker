@@ -7,6 +7,12 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
   const [step, setStep] = useState<'intent' | 'reading'>('intent');
 
   if (!material) return null;
+  if (!material.file_url) return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0B0F19]/95 backdrop-blur-md">
+      <div className="text-white p-6 bg-red-500/20 rounded-xl">Error: No valid PDF URL found.</div>
+      <button onClick={onClose} className="absolute top-4 right-4 text-white">Close</button>
+    </div>
+  );
 
   const handleStartTimer = (type: any) => {
     startTimer(subject, chapter, type);
@@ -54,9 +60,9 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
       ) : (
         <div className="w-full h-full pt-16">
           <iframe 
-            src={material.file_url} 
-            className="w-full h-full border-none bg-white"
-            title="PDF Reader"
+            src={`${material.file_url}#toolbar=0&navpanes=0`} 
+            className="w-full h-full flex-1 border-0 bg-white"
+            title={material.title}
           />
         </div>
       )}
