@@ -59,9 +59,10 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
       {/* Main Content Area */}
       {step === 'intent' ? (
         <div className="flex-1 flex items-center justify-center relative">
-          {/* Background blurred iframe for aesthetics */}
-          <iframe 
-            src={`https://docs.google.com/viewer?url=${encodeURIComponent(material.file_url)}&embedded=true`}
+          {/* Background blurred object for aesthetics */}
+          <object
+            data={`${material.file_url}#toolbar=0`}
+            type="application/pdf"
             className="absolute inset-0 w-full h-full border-0 opacity-20 filter blur-sm pointer-events-none"
             aria-hidden="true"
           />
@@ -83,11 +84,24 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
         </div>
       ) : (
         <div className="flex-1 w-full h-[calc(100vh-3.5rem)]">
-          <iframe 
-            src={`https://docs.google.com/viewer?url=${encodeURIComponent(material.file_url)}&embedded=true`} 
-            className="w-full h-full border-0 bg-white"
-            title={material.title}
-          />
+          <object
+            data={`${material.file_url}#toolbar=0`}
+            type="application/pdf"
+            className="w-full h-full flex-1"
+          >
+            {/* Fallback if the browser blocks inline PDFs */}
+            <div className="flex flex-col items-center justify-center h-full w-full bg-[#131A22] text-[#9CA3AF]">
+              <p>Your browser does not support inline PDF viewing.</p>
+              <a 
+                href={material.file_url} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="mt-4 px-6 py-2 bg-[#FF9900] text-[#131A22] font-semibold rounded-md hover:bg-[#FFAD33] transition"
+              >
+                Download / Open PDF
+              </a>
+            </div>
+          </object>
         </div>
       )}
     </div>
