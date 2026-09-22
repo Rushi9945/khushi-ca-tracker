@@ -1,45 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { supabase } from './supabaseClient';
 
-export const Auth = ({ onLogin }: { onLogin: (name: string) => void }) => {
-  const [profile, setProfile] = useState<{ name: string; targetExam: string; passcode: string } | null>(null);
+export const Auth = ({ onLogin }: { onLogin: (name: string, userId: string) => void }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  
+  // Form State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [targetExam, setTargetExam] = useState('');
+  
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
-  // Setup state
-  const [name, setName] = useState('');
-  const [targetExam, setTargetExam] = useState('');
-  const [setupPasscode, setSetupPasscode] = useState('');
-  
-  // Login state
-  const [loginPasscode, setLoginPasscode] = useState('');
-  const [error, setError] = useState('');
-
+  // Check if already logged in on mount
   useEffect(() => {
-    const saved = localStorage.getItem('app_user_profile');
-    if (saved) {
-      setProfile(JSON.parse(saved));
-    }
-    setIsChecking(false);
-  }, []);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // Fetch profile to get name
+        supabase.from('profiles').select('full_name').eq('user_id', session.user.id).single()
+          .then(({ data }) => {
+            onLogin(data?.full_name || 'Student', session.user.id);
+          });
+      } else {
+        setIsChecking(false);
+      }
+    });
 
-  const handleSetup = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !targetExam || !setupPasscode) {
-      setError('Please fill out all fields.');
-      return;
-    }
-    const newProfile = { name, targetExam, passcode: setupPasscode };
-    localStorage.setItem('app_user_profile', JSON.stringify(newProfile));
-    setProfile(newProfile);
-    onLogin(newProfile.name);
-  };
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        supabase.from('profiles').select('full_name').eq('user_id', session.user.id).single()
+          .then(({ data }) => {
+            onLogin(data?.full_name || 'Student', session.user.id);
+          });
+      }
+    });
 
-  const handleLogin = (e: React.FormEvent) => {
+    return () => authListener.subscription.unsubscribe();
+  }, [onLogin]);
+
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (profile && loginPasscode === profile.passcode) {
-      onLogin(profile.name);
-    } else {
-      setError('Incorrect passcode.');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        // LOGIN
+        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        if (authError) throw authError;
+      } else {
+        // SIGNUP
+        if (!fullName || !targetExam) throw new Error('Please fill out all fields.');
+        
+        const { data, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (authError) throw authError;
+
+        if (data.user) {
+          // Create profile record
+          const { error: profileError } = await supabase.from('profiles').insert({
+            user_id: data.user.id,
+            full_name: fullName,
+            target_exam: targetExam
+          });
+          if (profileError) throw profileError;
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -58,76 +93,77 @@ export const Auth = ({ onLogin }: { onLogin: (name: string) => void }) => {
             StudiAudit<span className="text-[#FF9900]">.</span>
           </h1>
           <p className="text-sm text-slate-400">
-            {!profile ? 'Set up your local profile to begin.' : `Welcome back, ${profile.name.split(' ')[0]}`}
+            {isLogin ? 'Log in to your CA Final dashboard' : 'Create your free account'}
           </p>
         </div>
 
-        {!profile ? (
-          <form onSubmit={handleSetup} className="space-y-5">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="e.g. Khushi Soni"
-                className="w-full bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] transition"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Exam</label>
-              <input
-                type="text"
-                value={targetExam}
-                onChange={e => setTargetExam(e.target.value)}
-                placeholder="e.g. Nov 2026"
-                className="w-full bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] transition"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Create Passcode</label>
-              <input
-                type="password"
-                value={setupPasscode}
-                onChange={e => setSetupPasscode(e.target.value)}
-                placeholder="••••"
-                className="w-full bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] transition"
-              />
-            </div>
+        <form onSubmit={handleAuth} className="space-y-5">
+          {!isLogin && (
+            <>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  placeholder="e.g. Khushi Soni"
+                  className="w-full bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF9900] transition"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Exam</label>
+                <input
+                  type="text"
+                  value={targetExam}
+                  onChange={e => setTargetExam(e.target.value)}
+                  placeholder="e.g. Nov 2026"
+                  className="w-full bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF9900] transition"
+                />
+              </div>
+            </>
+          )}
 
-            {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="student@icai.org"
+              className="w-full bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF9900] transition"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF9900] transition"
+            />
+          </div>
 
-            <button
-              type="submit"
-              className="w-full py-3.5 mt-4 bg-gradient-to-r from-[#FF6B00] to-[#FF9900] hover:from-[#FF8533] hover:to-[#FFAD33] text-white font-bold rounded-lg shadow-[0_0_20px_rgba(255,153,0,0.3)] transition-all"
-            >
-              Create Local Vault
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">Enter Passcode</label>
-              <input
-                type="password"
-                value={loginPasscode}
-                onChange={e => setLoginPasscode(e.target.value)}
-                placeholder="••••"
-                autoFocus
-                className="w-full text-center tracking-[0.5em] text-xl bg-[#131A22] border border-[#2D3A4B] rounded-lg px-4 py-4 text-white focus:outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] transition"
-              />
-            </div>
+          {error && <p className="text-red-400 text-xs text-center">{error}</p>}
 
-            {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3.5 mt-4 bg-gradient-to-r from-[#FF6B00] to-[#FF9900] hover:from-[#FF8533] hover:to-[#FFAD33] text-white font-bold rounded-lg shadow-[0_0_20px_rgba(255,153,0,0.3)] transition-all disabled:opacity-50"
+          >
+            {isLoading ? 'Processing...' : (isLogin ? 'Unlock Dashboard' : 'Create Account')}
+          </button>
+        </form>
 
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-[#FF6B00] to-[#FF9900] hover:from-[#FF8533] hover:to-[#FFAD33] text-white font-bold rounded-lg shadow-[0_0_20px_rgba(255,153,0,0.3)] transition-all"
-            >
-              Unlock Dashboard
-            </button>
-          </form>
-        )}
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => setIsLogin(!isLogin)} 
+            className="text-xs text-[#9CA3AF] hover:text-white transition"
+          >
+            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+          </button>
+        </div>
       </motion.div>
     </div>
   );

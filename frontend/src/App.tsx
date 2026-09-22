@@ -16,6 +16,7 @@ const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState('');
+  const [userId, setUserId] = useState('');
   const [showSplash, setShowSplash] = useState(true);
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'syllabus' | 'planner' | 'settings'>('dashboard');
@@ -32,8 +33,9 @@ function App() {
     stopAndSaveSession
   } = useTimer();
 
-  const handleLogin = (name: string) => {
+  const handleLogin = (name: string, id: string) => {
     setUserName(name);
+    setUserId(id);
     setIsAuthenticated(true);
   };
 
