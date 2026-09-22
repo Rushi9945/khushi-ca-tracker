@@ -3,18 +3,15 @@ import { ChevronDown, ChevronUp, BookOpen, CheckCircle2, Play, MessageSquare, Se
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { useTimer } from './TimerContext';
 import { SUBJECT_COLORS } from './DashboardGraphs';
+import { supabase } from './supabaseClient';
 
 const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 
 export const SyllabusView = () => {
   const { startTimer } = useTimer();
   
-  const [progress, setProgress] = useState<any>(() => {
-    try { return JSON.parse(localStorage.getItem('ascend_syllabus_progress') || '{}'); } catch { return {}; }
-  });
-  const [notes, setNotes] = useState<any>(() => {
-    try { return JSON.parse(localStorage.getItem('ascend_chapter_notes') || '{}'); } catch { return {}; }
-  });
+  const [progress, setProgress] = useState<any>({});
+  const [notes, setNotes] = useState<any>({});
 
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,19 +20,90 @@ export const SyllabusView = () => {
   const [activeNoteChapter, setActiveNoteChapter] = useState<{ subId: string; chapter: any } | null>(null);
   const [noteText, setNoteText] = useState('');
 
-  // Sync to localStorage
-  const saveProgress = (newProg: any) => {
-    localStorage.setItem('ascend_syllabus_progress', JSON.stringify(newProg));
-    setProgress(newProg);
-    window.dispatchEvent(new Event('sessionSaved')); // Trigger dashboard update if needed
+  useEffect(() => {
+    const loadCloudData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data, error } = await supabase.from('chapter_progress').select('*');
+      if (data && !error) {
+        const progObj: any = {};
+        const notesObj: any = {};
+        data.forEach(r => {
+          progObj[r.chapter_id] = {
+            stars: r.confidence_stars,
+            r1: r.r1,
+            r2: r.r2,
+            r3: r.r3,
+            completed: r.completed
+          };
+          if (r.note) {
+            notesObj[r.chapter_id] = r.note;
+          }
+        });
+        setProgress(progObj);
+        setNotes(notesObj);
+      }
+    };
+    loadCloudData();
+  }, []);
+
+  const updateChapterProgress = async (subjectId: string, chapterId: string, updates: any) => {
+    // 1. Optimistic UI update
+    const currentProg = progress[chapterId] || {};
+    const newProg = { ...currentProg, ...updates };
+    setProgress((prev: any) => ({ ...prev, [chapterId]: newProg }));
+
+    // 2. Sync to Supabase
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await supabase.from('chapter_progress').upsert({
+        user_id: session.user.id,
+        subject_id: subjectId,
+        chapter_id: chapterId,
+        confidence_stars: newProg.stars || 0,
+        r1: newProg.r1 || false,
+        r2: newProg.r2 || false,
+        r3: newProg.r3 || false,
+        completed: newProg.completed || false,
+        note: notes[chapterId] || '',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id, chapter_id' });
+      
+      window.dispatchEvent(new Event('sessionSaved')); // Sync export logic if needed
+    } catch(e) { console.error(e); }
   };
 
-  const saveNote = () => {
+  const saveNote = async () => {
     if (!activeNoteChapter) return;
-    const newNotes = { ...notes, [activeNoteChapter.chapter.id]: noteText };
-    localStorage.setItem('ascend_chapter_notes', JSON.stringify(newNotes));
-    setNotes(newNotes);
+    const chId = activeNoteChapter.chapter.id;
+    const subId = activeNoteChapter.subId;
+    
+    // 1. Optimistic UI
+    setNotes((prev: any) => ({ ...prev, [chId]: noteText }));
     setActiveNoteChapter(null);
+
+    // 2. Sync to Supabase
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const p = progress[chId] || {};
+      await supabase.from('chapter_progress').upsert({
+        user_id: session.user.id,
+        subject_id: subId,
+        chapter_id: chId,
+        confidence_stars: p.stars || 0,
+        r1: p.r1 || false,
+        r2: p.r2 || false,
+        r3: p.r3 || false,
+        completed: p.completed || false,
+        note: noteText,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id, chapter_id' });
+    } catch(e) { console.error(e); }
   };
 
   useEffect(() => {
@@ -209,7 +277,7 @@ export const SyllabusView = () => {
                               {/* Checkbox */}
                               <td className="px-4 py-3">
                                 <button 
-                                  onClick={() => saveProgress({ ...progress, [ch.id]: { ...p, completed: !p.completed } })}
+                                  onClick={() => updateChapterProgress(sub.id, ch.id, { completed: !p.completed })}
                                   className={`flex items-center justify-center w-5 h-5 rounded border transition ${p.completed ? 'bg-[#10B981] border-[#10B981] text-white' : 'border-[#4B5563] text-transparent hover:border-[#9CA3AF]'}`}
                                 >
                                   <CheckCircle2 size={14} strokeWidth={3} />
@@ -228,7 +296,7 @@ export const SyllabusView = () => {
                                   {[1, 2, 3, 4, 5].map(star => (
                                     <button 
                                       key={star}
-                                      onClick={() => saveProgress({ ...progress, [ch.id]: { ...p, stars: star } })}
+                                      onClick={() => updateChapterProgress(sub.id, ch.id, { stars: star })}
                                       className="focus:outline-none transition-transform hover:scale-110"
                                     >
                                       <Star size={14} className={`${(p.stars || 0) >= star ? 'fill-amber-400 text-amber-400' : 'text-[#4B5563] hover:text-[#9CA3AF]'}`} />
@@ -243,7 +311,7 @@ export const SyllabusView = () => {
                                   {['r1', 'r2', 'r3'].map((rev) => (
                                     <button
                                       key={rev}
-                                      onClick={() => saveProgress({ ...progress, [ch.id]: { ...p, [rev]: !p[rev] } })}
+                                      onClick={() => updateChapterProgress(sub.id, ch.id, { [rev]: !p[rev] })}
                                       className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition ${p[rev] ? 'bg-[#10B981] text-[#131A22]' : 'bg-[#1B2430] text-[#6B7280] border border-[#2D3A4B] hover:text-white'}`}
                                     >
                                       {rev.toUpperCase()}
