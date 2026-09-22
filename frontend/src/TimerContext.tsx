@@ -165,8 +165,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       // Dispatch custom event so other components (like Dashboard) fetch fresh data
       window.dispatchEvent(new Event('sessionSaved'));
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to save session to Supabase:", e);
+      alert("Error saving session to cloud: " + (e.message || JSON.stringify(e)));
       // Fallback: Optional locally cache it if offline, omitted for simplicity
     }
   };
