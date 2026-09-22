@@ -4,6 +4,7 @@ import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { useTimer } from './TimerContext';
 import { SUBJECT_COLORS } from './DashboardGraphs';
 import { supabase } from './supabaseClient';
+import { PdfViewerModal } from './PdfViewerModal';
 
 const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 
@@ -12,6 +13,11 @@ export const SyllabusView = () => {
   
   const [progress, setProgress] = useState<any>({});
   const [notes, setNotes] = useState<any>({});
+  
+  // New States for Library
+  const [viewMode, setViewMode] = useState<'tracker' | 'library'>('tracker');
+  const [libraryMaterials, setLibraryMaterials] = useState<any[]>([]);
+  const [activeMaterial, setActiveMaterial] = useState<{ material: any, subject: any, chapter: any } | null>(null);
 
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +49,12 @@ export const SyllabusView = () => {
         });
         setProgress(progObj);
         setNotes(notesObj);
+      }
+
+      // Load Materials
+      const { data: matData, error: matError } = await supabase.from('chapter_materials').select('*');
+      if (matData && !matError) {
+        setLibraryMaterials(matData);
       }
     };
     loadCloudData();
@@ -182,20 +194,40 @@ export const SyllabusView = () => {
           />
         </div>
         
-        <div className="flex gap-2 overflow-x-auto w-full no-scrollbar pb-1 md:pb-0">
-          {filters.map(f => (
-            <button 
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
-                activeFilter === f 
-                  ? 'bg-[#FF9900]/10 text-[#FF9900] border-[#FF9900]/30' 
-                  : 'bg-[#131A22] text-[#9CA3AF] border-[#2D3A4B] hover:text-white'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+        {viewMode === 'tracker' && (
+          <div className="flex gap-2 overflow-x-auto w-full no-scrollbar pb-1 md:pb-0">
+            {filters.map(f => (
+              <button 
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                  activeFilter === f 
+                    ? 'bg-[#FF9900]/10 text-[#FF9900] border-[#FF9900]/30' 
+                    : 'bg-[#131A22] text-[#9CA3AF] border-[#2D3A4B] hover:text-white'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Dual-View Toggle ── */}
+      <div className="flex justify-center mb-2">
+        <div className="bg-[#131A22] p-1 rounded-full flex border border-[#2D3A4B]">
+          <button 
+            onClick={() => setViewMode('tracker')}
+            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${viewMode === 'tracker' ? 'bg-[#FF9900] text-[#131A22] shadow-lg' : 'text-[#6B7280] hover:text-white'}`}
+          >
+            Progress Tracker
+          </button>
+          <button 
+            onClick={() => setViewMode('library')}
+            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${viewMode === 'library' ? 'bg-[#FF9900] text-[#131A22] shadow-lg' : 'text-[#6B7280] hover:text-white'}`}
+          >
+            Content Library
+          </button>
         </div>
       </div>
 
@@ -210,11 +242,13 @@ export const SyllabusView = () => {
             const matchSearch = ch.title.toLowerCase().includes(searchQuery.toLowerCase()) || String(ch.number).includes(searchQuery);
             if (!matchSearch) return false;
             
-            const p = progress[ch.id] || {};
-            if (activeFilter === 'Unread / Not Started') return !p.completed && !p.r1 && !p.r2 && !p.r3;
-            if (activeFilter === 'In Progress') return p.completed && !p.r1;
-            if (activeFilter === 'Needs Revision (<3 Stars)') return p.completed && (p.stars || 0) < 3;
-            if (activeFilter === 'Mastered') return p.r2 || p.r3 || p.stars === 5;
+            if (viewMode === 'tracker') {
+              const p = progress[ch.id] || {};
+              if (activeFilter === 'Unread / Not Started') return !p.completed && !p.r1 && !p.r2 && !p.r3;
+              if (activeFilter === 'In Progress') return p.completed && !p.r1;
+              if (activeFilter === 'Needs Revision (<3 Stars)') return p.completed && (p.stars || 0) < 3;
+              if (activeFilter === 'Mastered') return p.r2 || p.r3 || p.stars === 5;
+            }
             return true;
           });
 
@@ -254,99 +288,134 @@ export const SyllabusView = () => {
               {/* Accordion Body */}
               {isExpanded && (
                 <div className="border-t border-[#2D3A4B] bg-[#131A22]/30">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-[#2D3A4B] text-[10px] uppercase tracking-wider text-[#6B7280] bg-[#1B2430]/50">
-                          <th className="px-4 py-3 font-medium w-10">Done</th>
-                          <th className="px-4 py-3 font-medium min-w-[250px]">Chapter</th>
-                          <th className="px-4 py-3 font-medium text-center">Confidence</th>
-                          <th className="px-4 py-3 font-medium text-center">Revision</th>
-                          <th className="px-4 py-3 font-medium text-center">Notes</th>
-                          <th className="px-4 py-3 font-medium text-right pr-6">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredChapters.map((ch: any) => {
-                          const p = progress[ch.id] || {};
-                          const hasNote = !!notes[ch.id];
+                  {viewMode === 'tracker' ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#2D3A4B] text-[10px] uppercase tracking-wider text-[#6B7280] bg-[#1B2430]/50">
+                            <th className="px-4 py-3 font-medium w-10">Done</th>
+                            <th className="px-4 py-3 font-medium min-w-[250px]">Chapter</th>
+                            <th className="px-4 py-3 font-medium text-center">Confidence</th>
+                            <th className="px-4 py-3 font-medium text-center">Revision</th>
+                            <th className="px-4 py-3 font-medium text-center">Notes</th>
+                            <th className="px-4 py-3 font-medium text-right pr-6">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredChapters.map((ch: any) => {
+                            const p = progress[ch.id] || {};
+                            const hasNote = !!notes[ch.id];
 
-                          return (
-                            <tr key={ch.id} className="border-b border-[#2D3A4B]/40 hover:bg-[#232F3E] transition group/row">
-                              
-                              {/* Checkbox */}
-                              <td className="px-4 py-3">
-                                <button 
-                                  onClick={() => updateChapterProgress(sub.id, ch.id, { completed: !p.completed })}
-                                  className={`flex items-center justify-center w-5 h-5 rounded border transition ${p.completed ? 'bg-[#10B981] border-[#10B981] text-white' : 'border-[#4B5563] text-transparent hover:border-[#9CA3AF]'}`}
-                                >
-                                  <CheckCircle2 size={14} strokeWidth={3} />
-                                </button>
-                              </td>
+                            return (
+                              <tr key={ch.id} className="border-b border-[#2D3A4B]/40 hover:bg-[#232F3E] transition group/row">
+                                
+                                {/* Checkbox */}
+                                <td className="px-4 py-3">
+                                  <button 
+                                    onClick={() => updateChapterProgress(sub.id, ch.id, { completed: !p.completed })}
+                                    className={`flex items-center justify-center w-5 h-5 rounded border transition ${p.completed ? 'bg-[#10B981] border-[#10B981] text-white' : 'border-[#4B5563] text-transparent hover:border-[#9CA3AF]'}`}
+                                  >
+                                    <CheckCircle2 size={14} strokeWidth={3} />
+                                  </button>
+                                </td>
 
-                              {/* Chapter Title */}
-                              <td className="px-4 py-3">
-                                <div className="text-sm font-medium text-white line-clamp-1">{ch.number}. {ch.title}</div>
-                                <div className="text-[10px] text-[#6B7280] mt-0.5">{ch.totalLectures} lectures</div>
-                              </td>
+                                {/* Chapter Title */}
+                                <td className="px-4 py-3">
+                                  <div className="text-sm font-medium text-white line-clamp-1">{ch.number}. {ch.title}</div>
+                                  <div className="text-[10px] text-[#6B7280] mt-0.5">{ch.totalLectures} lectures</div>
+                                </td>
 
-                              {/* Confidence Stars */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center justify-center gap-1">
-                                  {[1, 2, 3, 4, 5].map(star => (
+                                {/* Confidence Stars */}
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-center gap-1">
+                                    {[1, 2, 3, 4, 5].map(star => (
+                                      <button 
+                                        key={star}
+                                        onClick={() => updateChapterProgress(sub.id, ch.id, { stars: star })}
+                                        className="focus:outline-none transition-transform hover:scale-110"
+                                      >
+                                        <Star size={14} className={`${(p.stars || 0) >= star ? 'fill-amber-400 text-amber-400' : 'text-[#4B5563] hover:text-[#9CA3AF]'}`} />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </td>
+
+                                {/* Revision Pills */}
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    {['r1', 'r2', 'r3'].map((rev) => (
+                                      <button
+                                        key={rev}
+                                        onClick={() => updateChapterProgress(sub.id, ch.id, { [rev]: !p[rev] })}
+                                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition ${p[rev] ? 'bg-[#10B981] text-[#131A22]' : 'bg-[#1B2430] text-[#6B7280] border border-[#2D3A4B] hover:text-white'}`}
+                                      >
+                                        {rev.toUpperCase()}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </td>
+
+                                {/* Flashpoints / Notes */}
+                                <td className="px-4 py-3 text-center">
+                                  <button 
+                                    onClick={() => { setActiveNoteChapter({ subId: sub.id, chapter: ch }); setNoteText(notes[ch.id] || ''); }}
+                                    className={`p-1.5 rounded-md transition ${hasNote ? 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20' : 'text-[#6B7280] hover:text-white hover:bg-[#2D3A4B]'}`}
+                                    title={hasNote ? "View/Edit Note" : "Add Note"}
+                                  >
+                                    <MessageSquare size={16} />
+                                  </button>
+                                </td>
+
+                                {/* Action */}
+                                <td className="px-4 py-3 text-right pr-6">
+                                  <button 
+                                    onClick={() => startTimer(sub, ch, p.r1 ? 'Revision' : 'Self Study')}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9900]/10 text-[#FF9900] hover:bg-[#FF9900] hover:text-[#131A22] rounded text-xs font-bold transition shadow-sm"
+                                  >
+                                    <Play size={12} fill="currentColor"/> Start
+                                  </button>
+                                </td>
+
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-4 space-y-4">
+                      {filteredChapters.map((ch: any) => {
+                        const mats = libraryMaterials.filter(m => m.chapter_id === ch.id && m.subject_id === sub.id);
+                        return (
+                          <div key={ch.id} className="bg-[#1B2430] border border-[#2D3A4B] rounded-lg p-4">
+                            <h4 className="text-white font-medium mb-3">{ch.number}. {ch.title}</h4>
+                            {mats.length > 0 ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {mats.map(mat => (
+                                  <div key={mat.id} className="bg-[#131A22] border border-[#2D3A4B] p-3 rounded-lg flex flex-col gap-3">
+                                    <div className="flex justify-between items-start">
+                                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                        {mat.material_type}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-white line-clamp-2">{mat.title}</p>
                                     <button 
-                                      key={star}
-                                      onClick={() => updateChapterProgress(sub.id, ch.id, { stars: star })}
-                                      className="focus:outline-none transition-transform hover:scale-110"
+                                      onClick={() => setActiveMaterial({ material: mat, subject: sub, chapter: ch })}
+                                      className="mt-auto w-full py-2 bg-[#FF9900]/10 hover:bg-[#FF9900] text-[#FF9900] hover:text-[#131A22] rounded text-xs font-bold transition flex items-center justify-center gap-2"
                                     >
-                                      <Star size={14} className={`${(p.stars || 0) >= star ? 'fill-amber-400 text-amber-400' : 'text-[#4B5563] hover:text-[#9CA3AF]'}`} />
+                                      <BookOpen size={14} /> Open & Study
                                     </button>
-                                  ))}
-                                </div>
-                              </td>
-
-                              {/* Revision Pills */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  {['r1', 'r2', 'r3'].map((rev) => (
-                                    <button
-                                      key={rev}
-                                      onClick={() => updateChapterProgress(sub.id, ch.id, { [rev]: !p[rev] })}
-                                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition ${p[rev] ? 'bg-[#10B981] text-[#131A22]' : 'bg-[#1B2430] text-[#6B7280] border border-[#2D3A4B] hover:text-white'}`}
-                                    >
-                                      {rev.toUpperCase()}
-                                    </button>
-                                  ))}
-                                </div>
-                              </td>
-
-                              {/* Flashpoints / Notes */}
-                              <td className="px-4 py-3 text-center">
-                                <button 
-                                  onClick={() => { setActiveNoteChapter({ subId: sub.id, chapter: ch }); setNoteText(notes[ch.id] || ''); }}
-                                  className={`p-1.5 rounded-md transition ${hasNote ? 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20' : 'text-[#6B7280] hover:text-white hover:bg-[#2D3A4B]'}`}
-                                  title={hasNote ? "View/Edit Note" : "Add Note"}
-                                >
-                                  <MessageSquare size={16} />
-                                </button>
-                              </td>
-
-                              {/* Action */}
-                              <td className="px-4 py-3 text-right pr-6">
-                                <button 
-                                  onClick={() => startTimer(sub, ch, p.r1 ? 'Revision' : 'Self Study')}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9900]/10 text-[#FF9900] hover:bg-[#FF9900] hover:text-[#131A22] rounded text-xs font-bold transition shadow-sm"
-                                >
-                                  <Play size={12} fill="currentColor"/> Start
-                                </button>
-                              </td>
-
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-[#6B7280] italic">No digital materials uploaded yet.</p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -403,6 +472,15 @@ export const SyllabusView = () => {
         </div>
       )}
 
+      {/* ── Content Library Modal ── */}
+      {activeMaterial && (
+        <PdfViewerModal 
+          material={activeMaterial.material} 
+          subject={activeMaterial.subject} 
+          chapter={activeMaterial.chapter} 
+          onClose={() => setActiveMaterial(null)} 
+        />
+      )}
     </div>
   );
 };
