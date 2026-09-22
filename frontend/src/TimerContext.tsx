@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
+import { supabase } from './supabaseClient';
 export type SessionType = 'Lecture' | 'Self Study' | 'Revision';
 
 interface TimerState {
@@ -128,29 +128,17 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setState(prev => ({ ...prev, isRunning: true, startTime: Date.now() }));
   };
 
-  const stopAndSaveSession = () => {
+  const stopAndSaveSession = async () => {
     if (!state.activeChapter) return;
     
     // Require at least 1 minute to save properly, or floor it.
     const durationMinutes = Math.max(1, Math.floor(state.elapsedTime / 60000));
+    const timestamp = Date.now();
+    const sessionType = state.sessionType;
+    const subjectId = state.activeSubject?.id;
+    const chapterId = state.activeChapter.id;
     
-    // Append to ascend_sessions in localStorage
-    const existing = JSON.parse(localStorage.getItem('ascend_sessions') || '[]');
-    const newSession = {
-      id: Date.now(),
-      subjectId: state.activeSubject?.id,
-      chapterId: state.activeChapter.id,
-      durationMinutes: durationMinutes,
-      timestamp: Date.now(),
-      type: state.sessionType
-    };
-    
-    localStorage.setItem('ascend_sessions', JSON.stringify([...existing, newSession]));
-    
-    // Dispatch custom event so other components (like Dashboard) can update instantly
-    window.dispatchEvent(new Event('sessionSaved'));
-
-    // Reset state
+    // Reset state immediately so UI feels responsive
     setState({
       isRunning: false,
       startTime: null,
@@ -159,6 +147,28 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       activeChapter: null,
       sessionType: null
     });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active auth session");
+
+      const { error } = await supabase.from('study_sessions').insert({
+        user_id: session.user.id,
+        subject_id: subjectId,
+        chapter_id: chapterId,
+        duration_minutes: durationMinutes,
+        session_type: sessionType,
+        session_timestamp: timestamp
+      });
+
+      if (error) throw error;
+      
+      // Dispatch custom event so other components (like Dashboard) fetch fresh data
+      window.dispatchEvent(new Event('sessionSaved'));
+    } catch (e) {
+      console.error("Failed to save session to Supabase:", e);
+      // Fallback: Optional locally cache it if offline, omitted for simplicity
+    }
   };
 
   return (

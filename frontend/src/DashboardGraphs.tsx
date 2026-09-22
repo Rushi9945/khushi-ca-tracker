@@ -3,9 +3,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Calendar, Clock, Target, TrendingUp, Flame, BookOpen, Play, CheckCircle2, AlertCircle, ChevronDown, Sparkles, ArrowLeft, Trash2 } from 'lucide-react';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { useTimer } from './TimerContext';
+import { supabase } from './supabaseClient';
 
 interface Session {
-  id: number;
+  id: any;
   subjectId: string;
   chapterId: string;
   durationMinutes: number;
@@ -23,10 +24,6 @@ export const SUBJECT_COLORS: Record<string, string> = {
 };
 export const getSubColor = (id: string) => SUBJECT_COLORS[id?.toLowerCase()] || '#FF9900';
 
-function loadSessions(): Session[] {
-  try { return JSON.parse(localStorage.getItem('ascend_sessions') || '[]'); }
-  catch { return []; }
-}
 function loadExamDate(): string | null {
   return localStorage.getItem('ascend_exam_date') || null;
 }
@@ -40,7 +37,7 @@ const orderedSubjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 
 export const DashboardGraphs = () => {
   const { startTimer, isRunning, activeSubject, activeChapter, pauseTimer, elapsedTime } = useTimer();
-  const [sessions, setSessions] = useState<Session[]>(loadSessions);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [examDate, setExamDate] = useState<string | null>(loadExamDate);
 
   // ── Manual Goal State ──
@@ -73,10 +70,34 @@ export const DashboardGraphs = () => {
   };
 
   useEffect(() => {
-    const reload = () => { setSessions(loadSessions()); setExamDate(loadExamDate()); };
+    const fetchCloudData = async () => {
+      try {
+        const { data: authData } = await supabase.auth.getSession();
+        if (!authData.session) return;
+        
+        const { data, error } = await supabase.from('study_sessions').select('*').order('session_timestamp', { ascending: false });
+        if (data && !error) {
+          const mapped: Session[] = data.map(r => ({
+            id: r.id,
+            subjectId: r.subject_id,
+            chapterId: r.chapter_id,
+            durationMinutes: r.duration_minutes,
+            timestamp: parseInt(r.session_timestamp),
+            type: r.session_type
+          }));
+          setSessions(mapped);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    fetchCloudData();
+    const reload = () => { fetchCloudData(); setExamDate(loadExamDate()); };
     window.addEventListener('sessionSaved', reload);
     window.addEventListener('examDateChanged', reload);
-    const iv = setInterval(reload, 5000);
+    // Refresh from cloud every 2 mins to save bandwidth
+    const iv = setInterval(reload, 120000);
     return () => { window.removeEventListener('sessionSaved', reload); window.removeEventListener('examDateChanged', reload); clearInterval(iv); };
   }, []);
 
