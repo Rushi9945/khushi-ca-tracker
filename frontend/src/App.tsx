@@ -9,7 +9,7 @@ import { Auth } from './Auth';
 import { AiStudyManager } from './AiStudyManager';
 import { useTimer } from './TimerContext';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
-import { BookOpen, Target, LayoutDashboard, Settings, Play, Pause, Square, ChevronRight } from 'lucide-react';
+import { BookOpen, Target, LayoutDashboard, Settings, Play, Pause, Square, ChevronRight, Sun, Moon } from 'lucide-react';
 
 const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 
@@ -20,6 +20,20 @@ function App() {
   const [showSplash, setShowSplash] = useState(() => {
     return !sessionStorage.getItem('hasSeenSplash');
   });
+  
+  const [isLightMode, setIsLightMode] = useState(() => {
+    return localStorage.getItem('theme') === 'light';
+  });
+
+  useEffect(() => {
+    if (isLightMode) {
+      document.body.classList.add('light-mode');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.body.classList.remove('light-mode');
+      localStorage.setItem('theme', 'dark');
+    }
+  }, [isLightMode]);
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'syllabus' | 'planner' | 'settings'>('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
@@ -108,6 +122,14 @@ function App() {
                   </div>
                 </div>
               )}
+
+              <button 
+                onClick={() => setIsLightMode(!isLightMode)} 
+                className="px-2 py-1.5 rounded-md transition flex items-center justify-center text-[#FF9900] hover:bg-[#FF9900]/10 mr-1"
+                title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}
+              >
+                {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
 
               <button 
                 onClick={() => { setActiveTab('syllabus'); setSelectedSubjectId(null); }} 

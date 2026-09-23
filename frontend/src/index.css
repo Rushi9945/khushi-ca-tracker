@@ -32,3 +32,16 @@ input, textarea, [contenteditable] {
   user-select: auto;
   -webkit-user-select: auto;
 }
+
+/* Light Mode Hack */
+body.light-mode {
+  filter: invert(1) hue-rotate(180deg);
+  background-color: #ECE5DD !important; /* Invert of #131A22 gives #ECE5DD roughly */
+}
+
+body.light-mode img,
+body.light-mode iframe,
+body.light-mode video,
+body.light-mode .preserve-colors {
+  filter: invert(1) hue-rotate(180deg);
+}
