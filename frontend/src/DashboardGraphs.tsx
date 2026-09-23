@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, Clock, Target, TrendingUp, Flame, BookOpen, Play, CheckCircle2, AlertCircle, ChevronDown, Sparkles, ArrowLeft, Trash2 } from 'lucide-react';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { useTimer } from './TimerContext';
 import { supabase } from './supabaseClient';
+import { StudyAnalyticsGraph } from './StudyAnalyticsGraph';
 
 interface Session {
   id: any;
@@ -224,197 +224,8 @@ export const DashboardGraphs = () => {
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
       
-      {/* ── 12-Hour Target Tracker (New) ── */}
-      <div className="bg-[#1B2430] border border-[#2D3A4B] rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-        
-        <div className="flex-1 w-full">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-white mb-1">12-Hour Daily Target</h2>
-              <p className="text-sm text-[#9CA3AF]">
-                {totalLoggedHoursToday.toFixed(1)} / 12.0 hrs · {Math.round(pctTarget)}%
-              </p>
-            </div>
-            
-            <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${paceStatus.isAhead ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-              {paceStatus.text}
-            </div>
-          </div>
-
-          <div className="flex gap-1.5 w-full">
-            {Array.from({ length: 12 }).map((_, i) => {
-              const blockFill = Math.max(0, Math.min(1, totalLoggedHoursToday - i));
-              const isActive = blockFill > 0 && blockFill < 1;
-              return (
-                <div key={i} className="flex-1 h-3.5 bg-[#131A22] rounded-sm border border-[#2D3A4B] overflow-hidden relative shadow-inner">
-                  <div 
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#FF6B00] to-[#FF9900] transition-all duration-300" 
-                    style={{ width: `${blockFill * 100}%` }}
-                  />
-                  {isActive && (
-                    <div 
-                      className="absolute inset-y-0 left-0 bg-white/30 animate-[shimmer_2s_infinite]" 
-                      style={{ width: `${blockFill * 100}%` }} 
-                    />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 1: Dual Target/Revision Engine ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Today's Manual Goal Component */}
-        <div className="bg-[#1B2430] border border-[#2D3A4B] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Target size={18} className="text-[#FF9900]" />
-              <h3 className="font-semibold text-lg text-white tracking-tight">Today's Study Goal</h3>
-            </div>
-            {dailyTarget && !isEditingGoal && (
-              <button 
-                onClick={handleEditGoal} 
-                className="text-xs text-[#9CA3AF] hover:text-[#FF9900] flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-[#FF9900]/10"
-              >
-                <ArrowLeft size={12} /> Edit Target
-              </button>
-            )}
-          </div>
-
-          {!dailyTarget || isEditingGoal ? (
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-3">
-                <select 
-                  value={goalForm.subjectId} 
-                  onChange={e => setGoalForm(prev => ({ ...prev, subjectId: e.target.value, chapterId: (CA_FINAL_SYLLABUS as any)[e.target.value].chapters[0].id }))}
-                  className="w-full min-w-0 bg-[#131A22] border border-[#2D3A4B] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FF9900]/50 outline-none truncate"
-                >
-                  {orderedSubjects.map(s => <option key={s.id} value={s.id}>{s.id.toUpperCase()} - {s.name}</option>)}
-                </select>
-                <select 
-                  value={goalForm.chapterId} 
-                  onChange={e => setGoalForm(prev => ({ ...prev, chapterId: e.target.value }))}
-                  className="w-full min-w-0 bg-[#131A22] border border-[#2D3A4B] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FF9900]/50 outline-none truncate"
-                >
-                  {((CA_FINAL_SYLLABUS as any)[goalForm.subjectId]?.chapters || []).map((c: any) => (
-                    <option key={c.id} value={c.id}>Ch {c.number}: {c.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 mt-1">
-                <input 
-                  type="number" min="0.5" step="0.5" value={goalForm.targetHours} 
-                  onChange={e => setGoalForm(prev => ({ ...prev, targetHours: Number(e.target.value) }))}
-                  className="w-20 bg-[#131A22] border border-[#2D3A4B] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FF9900]/50 outline-none text-center"
-                />
-                <span className="text-sm text-[#9CA3AF]">Hours Target</span>
-                
-                <div className="ml-auto flex items-center gap-2">
-                  {isEditingGoal && (
-                    <button 
-                      onClick={handleClearGoal}
-                      className="flex items-center gap-1.5 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition text-xs font-medium"
-                    >
-                      <Trash2 size={14}/> Clear
-                    </button>
-                  )}
-                  <button 
-                    onClick={handleSaveGoal}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#232F3E] hover:bg-[#2D3A4B] text-white rounded-lg transition text-sm font-medium border border-[#2D3A4B]"
-                  >
-                    Save Target <ChevronDown size={14}/>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border" style={{ color: getSubColor(dailyTarget.subjectId), backgroundColor: `${getSubColor(dailyTarget.subjectId)}15`, borderColor: `${getSubColor(dailyTarget.subjectId)}40` }}>
-                      {dailyTarget.subjectId}
-                    </span>
-                    <span className="text-sm font-medium text-white">Ch {((CA_FINAL_SYLLABUS as any)[dailyTarget.subjectId]?.chapters.find((c:any) => c.id === dailyTarget.chapterId))?.number || '?'}</span>
-                  </div>
-                  <p className="text-xs text-[#9CA3AF] line-clamp-1 max-w-[250px]">
-                    {((CA_FINAL_SYLLABUS as any)[dailyTarget.subjectId]?.chapters.find((c:any) => c.id === dailyTarget.chapterId))?.title}
-                  </p>
-                </div>
-                {todayTargetProgress.isComplete ? (
-                  <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full border border-emerald-400/20 text-xs font-bold uppercase tracking-wider">
-                    <CheckCircle2 size={14}/> Target Met
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      const sub = (CA_FINAL_SYLLABUS as any)[dailyTarget.subjectId];
-                      const ch = sub?.chapters.find((c:any) => c.id === dailyTarget.chapterId);
-                      if (sub && ch) startTimer(sub, ch, 'Self Study');
-                    }}
-                    className={actionBtnClass} style={actionBtnStyle}
-                  >
-                    <Play size={14} fill="currentColor"/> Launch Session
-                  </button>
-                )}
-              </div>
-              
-              <div>
-                <div className="flex justify-between text-xs font-medium mb-1.5">
-                  <span className="text-[#9CA3AF]">{Math.floor(todayTargetProgress.currentMins / 60)}h {todayTargetProgress.currentMins % 60}m elapsed</span>
-                  <span className="text-white">{dailyTarget.targetHours}h target</span>
-                </div>
-                <div className="h-2.5 bg-[#131A22] rounded-full overflow-hidden border border-[#2D3A4B]">
-                  <div className="h-full bg-gradient-to-r from-[#FF9900] to-[#FF6B00] rounded-full transition-all duration-700 relative" style={{ width: `${todayTargetProgress.pct}%` }}>
-                    <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Smart Revision Nudge (7-Day Deficit Algorithm) */}
-        <div className="bg-[#1B2430] border border-[#2D3A4B] rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#FF6B00]/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex items-center justify-between mb-4 relative z-10">
-            <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-[#FF6B00]" />
-              <h3 className="font-semibold text-lg text-white tracking-tight">Smart Revision Nudge</h3>
-            </div>
-            <span className="text-[10px] text-[#FF6B00] font-bold uppercase tracking-wider bg-[#FF6B00]/10 px-2 py-0.5 rounded border border-[#FF6B00]/20">Algorithm</span>
-          </div>
-
-          <div className="flex-1 flex flex-col justify-center relative z-10">
-            <div className="flex items-start gap-3 bg-[#131A22] border border-[#2D3A4B] rounded-lg p-4">
-              <AlertCircle size={20} className="text-[#9CA3AF] mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm text-white leading-relaxed">
-                  <strong className="font-semibold text-[#FF9900]">Revision Deficit:</strong> {smartRevision.subject?.name} ({smartRevision.subject?.id.toUpperCase()}) has only {smartRevision.hoursLogged} hours logged in the last 7 days.
-                </p>
-                <p className="text-xs text-[#9CA3AF] mt-2">Recommended: 45m Quick Revision to maintain spaced repetition strength.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex justify-end relative z-10">
-             <button
-                onClick={() => {
-                  if (smartRevision.subject) startTimer(smartRevision.subject, smartRevision.subject.chapters[0], 'Revision');
-                }}
-                className={actionBtnClass} style={actionBtnStyle}
-              >
-                <Play size={14} fill="currentColor"/> Revise Now
-              </button>
-          </div>
-        </div>
-
-      </div>
+      {/* ── Row 1: 3D Isometric Study Analytics Graph ── */}
+      <StudyAnalyticsGraph />
 
       {/* ── Row 2: Secondary KPIs ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
@@ -434,36 +245,7 @@ export const DashboardGraphs = () => {
         )}
       </div>
 
-      {/* ── Row 3: Area Chart ── */}
-      <div className="p-6 rounded-xl border border-[#2D3A4B] bg-[#1B2430] flex flex-col min-h-[300px]">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-semibold">Study Activity — Last 7 Days</h3>
-          <span className="text-xs text-[#6B7280]">{last7Total.toFixed(1)}h total</span>
-        </div>
-        {last7Total === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-[#6B7280] text-sm">
-            No study sessions logged yet. Start a timer to see your activity here.
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={last7} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-              <defs>
-                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#FF9900" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#FF9900" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2D3A4B" vertical={false}/>
-              <XAxis dataKey="name" stroke="#9CA3AF" tick={{ fill: '#9CA3AF', fontSize: 12 }} tickLine={false} axisLine={false}/>
-              <YAxis stroke="#9CA3AF" tick={{ fill: '#9CA3AF', fontSize: 12 }} tickLine={false} axisLine={false} unit="h"/>
-              <Tooltip contentStyle={{ backgroundColor: '#131A22', borderColor: '#2D3A4B', color: '#FFF', borderRadius: 8, fontSize: 12 }} itemStyle={{ color: '#FF9900' }} formatter={(v: number) => [`${v}h`, 'Study']}/>
-              <Area type="monotone" dataKey="hours" stroke="#FF9900" strokeWidth={2.5} fillOpacity={1} fill="url(#grad)" dot={{ r: 4, fill: '#FF9900', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#FF9900' }}/>
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* ── Row 4: Hours by Subject ── */}
+      {/* ── Row 3: Hours by Subject ── */}
       {subjectEntries.length > 0 && (
         <div className="p-6 rounded-xl border border-[#2D3A4B] bg-[#1B2430]">
           <h3 className="font-semibold mb-5">Hours by Subject</h3>
