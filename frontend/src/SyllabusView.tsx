@@ -17,6 +17,7 @@ export const SyllabusView = () => {
   // New States for Library
   const [viewMode, setViewMode] = useState<'tracker' | 'library'>('tracker');
   const [libraryMaterials, setLibraryMaterials] = useState<any[]>([]);
+  const [materialTime, setMaterialTime] = useState<Record<string, number>>({});
   const [activeMaterial, setActiveMaterial] = useState<{ material: any, subject: any, chapter: any } | null>(null);
 
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
@@ -56,8 +57,27 @@ export const SyllabusView = () => {
       if (matData && !matError) {
         setLibraryMaterials(matData);
       }
+
+      // Load Sessions to calculate material time
+      const { data: sessionData, error: sessionError } = await supabase.from('study_sessions').select('material_id, duration_minutes').eq('user_id', session.user.id);
+      if (sessionData && !sessionError) {
+        const timeMap: Record<string, number> = {};
+        sessionData.forEach(s => {
+          if (s.material_id) {
+            timeMap[s.material_id] = (timeMap[s.material_id] || 0) + (s.duration_minutes || 0);
+          }
+        });
+        setMaterialTime(timeMap);
+      }
     };
     loadCloudData();
+
+    // Listen for custom sessionSaved events to trigger refetch
+    const handleSessionSaved = () => {
+      loadCloudData();
+    };
+    window.addEventListener('sessionSaved', handleSessionSaved);
+    return () => window.removeEventListener('sessionSaved', handleSessionSaved);
   }, []);
 
   const updateChapterProgress = async (subjectId: string, chapterId: string, updates: any) => {
@@ -391,22 +411,38 @@ export const SyllabusView = () => {
                             <h4 className="text-white font-medium mb-3">{ch.number}. {ch.title}</h4>
                             {mats.length > 0 ? (
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {mats.map(mat => (
-                                  <div key={mat.id} className="bg-[#131A22] border border-[#2D3A4B] p-3 rounded-lg flex flex-col gap-3">
-                                    <div className="flex justify-between items-start">
-                                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                        {mat.material_type}
-                                      </span>
+                                {mats.map(mat => {
+                                  const totalMinutes = materialTime[mat.id] || 0;
+                                  const progressPct = Math.min(100, (totalMinutes / 600) * 100);
+
+                                  return (
+                                    <div key={mat.id} className="bg-[#131A22] border border-[#2D3A4B] p-3 rounded-lg flex flex-col gap-3 relative overflow-hidden">
+                                      <div className="flex justify-between items-start">
+                                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                          {mat.material_type}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-white line-clamp-2">{mat.title}</p>
+                                      
+                                      <div className="flex items-center gap-1.5 text-slate-400 mt-1">
+                                        <span className="text-[11px] flex items-center gap-1 font-medium">
+                                          ⏱️ Time Logged: {Math.floor(totalMinutes / 60)}h {totalMinutes % 60}m
+                                        </span>
+                                      </div>
+
+                                      <button 
+                                        onClick={() => setActiveMaterial({ material: mat, subject: sub, chapter: ch })}
+                                        className="mt-auto w-full py-2 bg-[#FF9900]/10 hover:bg-[#FF9900] text-[#FF9900] hover:text-[#131A22] rounded text-xs font-bold transition flex items-center justify-center gap-2 z-10 mb-0.5"
+                                      >
+                                        <BookOpen size={14} /> Open & Study
+                                      </button>
+                                      
+                                      <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-800">
+                                        <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
+                                      </div>
                                     </div>
-                                    <p className="text-sm text-white line-clamp-2">{mat.title}</p>
-                                    <button 
-                                      onClick={() => setActiveMaterial({ material: mat, subject: sub, chapter: ch })}
-                                      className="mt-auto w-full py-2 bg-[#FF9900]/10 hover:bg-[#FF9900] text-[#FF9900] hover:text-[#131A22] rounded text-xs font-bold transition flex items-center justify-center gap-2"
-                                    >
-                                      <BookOpen size={14} /> Open & Study
-                                    </button>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             ) : (
                               <p className="text-xs text-[#6B7280] italic">No digital materials uploaded yet.</p>

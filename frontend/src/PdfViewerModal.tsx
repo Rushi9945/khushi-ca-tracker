@@ -12,7 +12,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
 
   const handleStart = (mins: number) => {
     setTargetTime(mins);
-    startTimer(subject, chapter, 'Self Study');
+    startTimer(subject, chapter, 'Self Study', material.id);
     setIsReading(true);
   };
 

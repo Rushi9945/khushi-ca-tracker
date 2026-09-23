@@ -9,10 +9,11 @@ interface TimerState {
   activeSubject: any | null;
   activeChapter: any | null;
   sessionType: SessionType | null;
+  activeMaterialId?: string | null;
 }
 
 interface TimerContextValue extends TimerState {
-  startTimer: (subject: any, chapter: any, type: SessionType) => void;
+  startTimer: (subject: any, chapter: any, type: SessionType, materialId?: string) => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
   stopAndSaveSession: () => void;
@@ -28,6 +29,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     activeSubject: null,
     activeChapter: null,
     sessionType: null,
+    activeMaterialId: null,
   });
 
   // Hydrate from localStorage on mount
@@ -109,14 +111,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => clearInterval(interval);
   }, [state.isRunning]);
 
-  const startTimer = (subject: any, chapter: any, type: SessionType) => {
+  const startTimer = (subject: any, chapter: any, type: SessionType, materialId?: string) => {
     setState({
       isRunning: true,
       startTime: Date.now(),
       elapsedTime: 0,
       activeSubject: subject,
       activeChapter: chapter,
-      sessionType: type
+      sessionType: type,
+      activeMaterialId: materialId || null
     });
   };
 
@@ -136,7 +139,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const timestamp = Date.now();
     const sessionType = state.sessionType;
     const subjectId = state.activeSubject?.id;
-    const chapterId = state.activeChapter.id;
+    const chapterId = state.activeChapter?.id;
+    const materialId = state.activeMaterialId;
     
     // Reset state immediately so UI feels responsive
     setState({
@@ -145,7 +149,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       elapsedTime: 0,
       activeSubject: null,
       activeChapter: null,
-      sessionType: null
+      sessionType: null,
+      activeMaterialId: null
     });
 
     try {
@@ -156,6 +161,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         user_id: session.user.id,
         subject_id: subjectId,
         chapter_id: chapterId,
+        material_id: materialId, // Track material specific time
         duration_minutes: durationMinutes,
         session_type: sessionType,
         session_timestamp: timestamp
