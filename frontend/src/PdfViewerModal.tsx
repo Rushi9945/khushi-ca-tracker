@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { X, Play, FileText, ExternalLink } from 'lucide-react';
 import { useTimer } from './TimerContext';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+// Set up the worker for react-pdf
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => {
   const { startTimer } = useTimer();
-  const [step, setStep] = useState<'intent' | 'reading'>('intent');
+  const [isReading, setIsReading] = useState(false);
+  const [numPages, setNumPages] = useState<number | null>(null);
 
   if (!material) return null;
   if (!material.file_url) return (
@@ -16,7 +23,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
 
   const handleStartTimer = (type: any) => {
     startTimer(subject, chapter, type);
-    setStep('reading');
+    setIsReading(true);
   };
 
   return (
@@ -36,7 +43,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
         
         <div className="flex items-center gap-2">
           {/* External Link Button */}
-          {step === 'reading' && (
+          {isReading && (
             <a 
               href={material.file_url} 
               target="_blank" 
@@ -57,14 +64,8 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
       </div>
 
       {/* Main Content Area */}
-      {step === 'intent' ? (
+      {!isReading ? (
         <div className="flex-1 flex items-center justify-center relative">
-          {/* Background blurred iframe for aesthetics */}
-          <iframe 
-            src={`${material.file_url}#view=FitH`}
-            className="absolute inset-0 w-full h-full border-0 opacity-20 filter blur-sm pointer-events-none bg-white"
-            aria-hidden="true"
-          />
           <div className="w-full max-w-md p-8 bg-[#1B2430] border border-[#2D3A4B] rounded-2xl shadow-2xl text-center relative z-10">
             <h2 className="text-2xl font-bold text-white mb-2">Ready to study?</h2>
             <p className="text-[#9CA3AF] text-sm mb-8">
@@ -82,12 +83,25 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
           </div>
         </div>
       ) : (
-        <div className="flex-1 w-full h-[calc(100vh-3.5rem)]">
-          <iframe 
-            src={`${material.file_url}#view=FitH`} 
-            className="w-full h-full flex-1 border-0 bg-white" 
-            title={material.title}
-          />
+        <div className="flex-1 w-full h-[calc(100vh-3.5rem)] overflow-y-auto bg-[#0B0F19] flex flex-col items-center py-6">
+          <Document 
+            className="text-amber-500 flex flex-col items-center" 
+            file={material.file_url} 
+            loading={<div className="text-white mt-10">Loading Khushi's Study Material...</div>}
+            error={<div className="text-red-500 mt-10">Failed to load PDF. Please check the Supabase URL.</div>}
+            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+          >
+            {Array.from(new Array(numPages || 0), (el, index) => (
+              <Page 
+                key={`page_${index + 1}`} 
+                pageNumber={index + 1} 
+                renderAnnotationLayer={true} 
+                renderTextLayer={true} 
+                width={Math.min(window.innerWidth * 0.95, 1000)} 
+                className="mb-6 shadow-[0_0_25px_rgba(0,0,0,0.5)]" 
+              />
+            ))}
+          </Document>
         </div>
       )}
     </div>
