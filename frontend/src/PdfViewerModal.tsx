@@ -74,11 +74,11 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
             </div>
           </div>
         ) : (
-          /* Native PDF Embed (Bypasses CORS) */
-          <embed 
+          /* Native PDF Iframe (Bypasses CORS and fixes scrollbars) */
+          <iframe 
             src={`${safeUrl}#toolbar=0&navpanes=0&view=FitH`} 
-            type="application/pdf" 
-            className="w-full h-full bg-white"
+            className="w-full h-full bg-white border-0"
+            title={material.title}
           />
         )}
       </div>
