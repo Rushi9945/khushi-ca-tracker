@@ -13,11 +13,16 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
 
   if (!material) return null;
 
-  // Defensive URL cleanup in case the user pasted brackets or quotes in the database
+  // Defensive URL cleanup to extract URL if the user pasted a markdown link like [text](https://...)
   let safeUrl = material.file_url || '';
-  safeUrl = safeUrl.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
-  if (safeUrl && !safeUrl.startsWith('http')) {
-    safeUrl = `https://${safeUrl}`;
+  const urlMatch = safeUrl.match(/https?:\/\/[^\s)]+/);
+  if (urlMatch) {
+    safeUrl = urlMatch[0];
+  } else {
+    safeUrl = safeUrl.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
+    if (safeUrl && !safeUrl.startsWith('http')) {
+      safeUrl = `https://${safeUrl}`;
+    }
   }
 
   return (
