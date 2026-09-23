@@ -8,6 +8,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
   const [targetTime, setTargetTime] = useState<number>(60); // Default to 60 minutes
   const [customTime, setCustomTime] = useState<string>('');
   const { startTimer, elapsedTime, stopAndSaveSession } = useTimer();
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleStart = (mins: number) => {
     setTargetTime(mins);
@@ -57,6 +58,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
 
   const targetMs = targetTime * 60 * 1000;
   const progressPct = Math.min(100, (elapsedTime / targetMs) * 100);
+  const nodeRef = React.useRef(null);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#0B0F19] w-screen h-screen overflow-hidden">
@@ -126,13 +128,18 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
           <>
             <iframe 
               src={safeUrl} 
-              className="w-full h-full border-0"
+              className={`w-full h-full border-0 ${isDragging ? 'pointer-events-none' : ''}`}
               title={material.title}
             />
             
             {/* Floating Active Timer HUD */}
-            <Draggable handle=".drag-handle">
-              <div className="absolute bottom-10 right-10 z-50">
+            <Draggable 
+              nodeRef={nodeRef} 
+              handle=".drag-handle"
+              onStart={() => setIsDragging(true)}
+              onStop={() => setIsDragging(false)}
+            >
+              <div ref={nodeRef} className="absolute bottom-10 right-10 z-50">
                 <div className="bg-[#0B0F19]/95 backdrop-blur-md border border-amber-500/30 rounded-2xl p-4 shadow-2xl shadow-amber-900/20 flex flex-col items-center w-[440px]">
                   
                   {/* Drag Handle */}
