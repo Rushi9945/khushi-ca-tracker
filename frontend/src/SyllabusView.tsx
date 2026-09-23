@@ -8,6 +8,16 @@ import { PdfViewerModal } from './PdfViewerModal';
 
 const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 
+const SegmentedProgressBar = ({ completedPct, r1Pct, r2Pct }: { completedPct: number, r1Pct: number, r2Pct: number }) => {
+  return (
+    <div className="w-full h-2 bg-[#131A22] rounded-full overflow-hidden flex">
+      <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${completedPct}%` }} title={`Completed: ${completedPct}%`} />
+      <div className="h-full bg-amber-500 transition-all duration-500" style={{ width: `${r1Pct}%` }} title={`R1: ${r1Pct}%`} />
+      <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${r2Pct}%` }} title={`R2: ${r2Pct}%`} />
+    </div>
+  );
+};
+
 export const SyllabusView = () => {
   const { startTimer } = useTimer();
   
@@ -158,22 +168,26 @@ export const SyllabusView = () => {
   const getGroupStats = (group: number) => {
     const groupSubs = subjects.filter(s => s.group === group);
     let totalCh = 0;
-    let completedCh = 0;
-    let r1Completed = 0;
+    let completedOnly = 0;
+    let r1Only = 0;
+    let r2AndAbove = 0;
 
     groupSubs.forEach(sub => {
       totalCh += sub.chapters.length;
       sub.chapters.forEach((ch: any) => {
         const p = progress[ch.id] || {};
-        if (p.completed) completedCh++;
-        if (p.r1) r1Completed++;
+        if (p.r2 || p.r3) r2AndAbove++;
+        else if (p.r1) r1Only++;
+        else if (p.completed) completedOnly++;
       });
     });
 
     return {
       total: totalCh,
-      completedPct: totalCh ? Math.round((completedCh / totalCh) * 100) : 0,
-      r1Pct: totalCh ? Math.round((r1Completed / totalCh) * 100) : 0,
+      completedPct: totalCh ? Math.round((completedOnly / totalCh) * 100) : 0,
+      r1Pct: totalCh ? Math.round((r1Only / totalCh) * 100) : 0,
+      r2Pct: totalCh ? Math.round((r2AndAbove / totalCh) * 100) : 0,
+      totalCompletedPct: totalCh ? Math.round(((completedOnly + r1Only + r2AndAbove) / totalCh) * 100) : 0
     };
   };
 
@@ -197,12 +211,20 @@ export const SyllabusView = () => {
             
             <div className="space-y-4">
               <div>
-                <div className="flex justify-between text-xs mb-1.5"><span className="text-[#9CA3AF]">Chapters Completed</span><span className="text-white font-medium">{g.stats.completedPct}%</span></div>
-                <div className="h-2 bg-[#131A22] rounded-full overflow-hidden"><div className="h-full bg-[#FF9900] rounded-full" style={{ width: `${g.stats.completedPct}%` }}/></div>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span className="text-[#9CA3AF]">Overall Completion</span>
+                  <span className="text-white font-medium">{g.stats.totalCompletedPct}%</span>
+                </div>
+                <SegmentedProgressBar 
+                  completedPct={g.stats.completedPct} 
+                  r1Pct={g.stats.r1Pct} 
+                  r2Pct={g.stats.r2Pct} 
+                />
               </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1.5"><span className="text-[#9CA3AF]">Revision 1 (R1)</span><span className="text-white font-medium">{g.stats.r1Pct}%</span></div>
-                <div className="h-2 bg-[#131A22] rounded-full overflow-hidden"><div className="h-full bg-[#10B981] rounded-full" style={{ width: `${g.stats.r1Pct}%` }}/></div>
+              <div className="flex items-center gap-4 text-[10px] text-[#9CA3AF] mt-2">
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"/> Initial: {g.stats.completedPct}%</div>
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500"/> R1: {g.stats.r1Pct}%</div>
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500"/> R2+: {g.stats.r2Pct}%</div>
               </div>
             </div>
           </div>
@@ -300,8 +322,17 @@ export const SyllabusView = () => {
           if (filteredChapters.length === 0) return null;
 
           const totalSubCh = sub.chapters.length;
-          const completedSubCh = sub.chapters.filter((c:any) => progress[c.id]?.completed).length;
-          const subPct = totalSubCh ? Math.round((completedSubCh / totalSubCh) * 100) : 0;
+          let subComp = 0, subR1 = 0, subR2 = 0;
+          sub.chapters.forEach((c: any) => {
+            const p = progress[c.id] || {};
+            if (p.r2 || p.r3) subR2++;
+            else if (p.r1) subR1++;
+            else if (p.completed) subComp++;
+          });
+          const compPct = totalSubCh ? Math.round((subComp / totalSubCh) * 100) : 0;
+          const r1Pct = totalSubCh ? Math.round((subR1 / totalSubCh) * 100) : 0;
+          const r2Pct = totalSubCh ? Math.round((subR2 / totalSubCh) * 100) : 0;
+          const totalPct = totalSubCh ? Math.round(((subComp + subR1 + subR2) / totalSubCh) * 100) : 0;
 
           return (
             <div key={sub.id} className="bg-[#1B2430] border border-[#2D3A4B] rounded-xl overflow-hidden shadow-sm">
@@ -319,10 +350,13 @@ export const SyllabusView = () => {
                   </div>
                   <div className="flex items-center gap-4 mt-1.5">
                     <p className="text-xs text-[#9CA3AF]">{sub.chapters.length} Chapters · {sub.chapters.reduce((a:any, c:any)=>a+c.totalLectures, 0)} Lectures</p>
-                    <div className="flex items-center gap-2 w-32">
-                      <div className="h-1.5 flex-1 bg-[#131A22] rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${subPct}%`, backgroundColor: subColor }}/></div>
-                      <span className="text-[10px] text-[#9CA3AF]">{subPct}%</span>
+                  <div className="flex flex-col gap-1.5 w-40">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-[#9CA3AF] font-medium">Progress</span>
+                      <span className="text-[10px] font-bold text-white">{totalPct}%</span>
                     </div>
+                    <SegmentedProgressBar completedPct={compPct} r1Pct={r1Pct} r2Pct={r2Pct} />
+                  </div>
                   </div>
                 </div>
                 <div className="p-1 rounded-md text-[#9CA3AF] group-hover:text-white transition">
@@ -482,6 +516,13 @@ export const SyllabusView = () => {
             </div>
           );
         })}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#9CA3AF] mt-2 font-medium">
+        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"/> Completed</div>
+        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500"/> Revision 1</div>
+        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500"/> Revision 2</div>
+        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"/> Not Started</div>
       </div>
 
       {/* ── Notes Modal ── */}
