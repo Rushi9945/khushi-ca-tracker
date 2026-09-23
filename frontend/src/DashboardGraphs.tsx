@@ -194,7 +194,11 @@ export const DashboardGraphs = () => {
     const match = last7.find(day => day.dateStr === sd);
     if (match) match.hours += (s.durationMinutes / 60);
   });
-  last7.forEach(d => d.hours = Number(d.hours.toFixed(1)));
+  last7.forEach(d => {
+    d.hours = Number(d.hours.toFixed(1));
+    (d as any).hoursBg1 = Number((d.hours * 0.7 + 0.8).toFixed(1));
+    (d as any).hoursBg2 = Number((d.hours * 1.3 - 0.4).toFixed(1));
+  });
   const last7Total = last7.reduce((a, d) => a + d.hours, 0);
   const avgDaily = (last7Total / 7);
 
@@ -434,52 +438,99 @@ export const DashboardGraphs = () => {
         )}
       </div>
 
-      {/* ── Row 3: Area Chart ── */}
-      <div className="p-6 rounded-xl border border-[#2D3A4B] bg-[#1B2430] flex flex-col min-h-[300px]">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-semibold">Study Activity — Last 7 Days</h3>
-          <span className="text-xs text-[#6B7280]">{last7Total.toFixed(1)}h total</span>
+      {/* ── Row 3: Area Chart (Glowing Neon Yellow/Orange) ── */}
+      <div className="p-6 rounded-xl border border-[#3d2008] bg-[#0c0500] flex flex-col min-h-[300px] relative overflow-hidden">
+        {/* Background Glowing Bokeh Effects */}
+        <div className="absolute -top-10 -left-10 w-48 h-48 bg-[#fb8500]/20 rounded-full blur-[60px] pointer-events-none" />
+        <div className="absolute bottom-0 right-20 w-64 h-64 bg-[#ffb703]/10 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/3 w-32 h-32 bg-[#ff5400]/15 rounded-full blur-[50px] pointer-events-none" />
+
+        <div className="flex items-center justify-between mb-6 relative z-10">
+          <h3 className="font-semibold text-[#ffb703] drop-shadow-md">Study Activity — Last 7 Days</h3>
+          <span className="text-xs text-[#fb8500] font-bold">{last7Total.toFixed(1)}h total</span>
         </div>
+        
         {last7Total === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-[#6B7280] text-sm">
+          <div className="flex-1 flex items-center justify-center text-[#ffb703]/50 text-sm relative z-10">
             No study sessions logged yet. Start a timer to see your activity here.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={220} className="relative z-10">
             <AreaChart data={last7} margin={{ top: 15, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4ade80" stopOpacity={0.6}/>
-                  <stop offset="100%" stopColor="#4ade80" stopOpacity={0.05}/>
+                  <stop offset="0%" stopColor="#ffb703" stopOpacity={0.7}/>
+                  <stop offset="100%" stopColor="#fb8500" stopOpacity={0.0}/>
                 </linearGradient>
-                <filter id="glowAndDepth" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="8" stdDeviation="6" floodColor="#064e3b" floodOpacity="0.8" />
+                <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+                <filter id="heavyGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
                 </filter>
               </defs>
               <XAxis dataKey="name" hide />
               <YAxis hide />
               <Tooltip 
-                cursor={{ stroke: '#22c55e', strokeWidth: 1, strokeDasharray: '4 4' }}
+                cursor={{ stroke: '#ffb703', strokeWidth: 1, strokeDasharray: '4 4' }}
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-slate-900/90 backdrop-blur border border-green-500/30 rounded-lg p-3 shadow-xl">
-                        <p className="text-white font-bold">{payload[0].value} Hours Logged</p>
-                      </div>
-                    );
+                    // Only show the tooltip for the real hours data
+                    const realData = payload.find(p => p.dataKey === 'hours');
+                    if (realData) {
+                      return (
+                        <div className="bg-[#1a0f07]/90 backdrop-blur-md border border-[#ffb703]/50 rounded-lg p-3 shadow-[0_0_15px_rgba(255,183,3,0.3)]">
+                          <p className="text-[#ffb703] font-extrabold text-sm tracking-wide">{realData.value} Hours Logged</p>
+                        </div>
+                      );
+                    }
                   }
                   return null;
                 }}
               />
+              
+              {/* Background dummy wave 1 */}
+              <Area 
+                type="monotone" 
+                dataKey="hoursBg1" 
+                stroke="#ff5400" 
+                strokeWidth={3} 
+                fillOpacity={0}
+                filter="url(#heavyGlow)"
+                opacity={0.5}
+                activeDot={false}
+              />
+              
+              {/* Background dummy wave 2 */}
+              <Area 
+                type="monotone" 
+                dataKey="hoursBg2" 
+                stroke="#fb8500" 
+                strokeWidth={4} 
+                fillOpacity={0}
+                filter="url(#neonGlow)"
+                opacity={0.6}
+                activeDot={false}
+              />
+              
+              {/* Foreground Real Wave */}
               <Area 
                 type="monotone" 
                 dataKey="hours" 
-                stroke="#22c55e" 
-                strokeWidth={8} 
+                stroke="#ffb703" 
+                strokeWidth={5} 
                 fillOpacity={1} 
                 fill="url(#colorHours)" 
-                filter="url(#glowAndDepth)"
-                activeDot={{ r: 6, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
+                filter="url(#neonGlow)"
+                activeDot={{ r: 7, fill: '#ffb703', stroke: '#fff', strokeWidth: 2, filter: "url(#neonGlow)" }}
               />
             </AreaChart>
           </ResponsiveContainer>
