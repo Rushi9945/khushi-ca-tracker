@@ -446,12 +446,12 @@ export const DashboardGraphs = () => {
         <div className="absolute top-1/4 left-1/3 w-32 h-32 bg-[#ff5400]/15 rounded-full blur-[50px] pointer-events-none" />
 
         <div className="flex items-center justify-between mb-6 relative z-10">
-          <h3 className="font-semibold text-[#ffb703] drop-shadow-md">Study Activity — Last 7 Days</h3>
-          <span className="text-xs text-[#fb8500] font-bold">{last7Total.toFixed(1)}h total</span>
+          <h3 className="font-semibold text-white">Study Activity — Last 7 Days</h3>
+          <span className="text-xs text-[#9CA3AF]">{last7Total.toFixed(1)}h total</span>
         </div>
         
         {last7Total === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-[#ffb703]/50 text-sm relative z-10">
+          <div className="flex-1 flex items-center justify-center text-[#9CA3AF] text-sm relative z-10">
             No study sessions logged yet. Start a timer to see your activity here.
           </div>
         ) : (
