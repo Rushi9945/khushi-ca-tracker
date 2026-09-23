@@ -13,16 +13,25 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
 
   if (!material) return null;
 
-  // Defensive URL cleanup to extract URL if the user pasted a markdown link like [text](https://...)
+  // Extremely robust URL cleanup for Supabase storage URLs
   let safeUrl = material.file_url || '';
-  const urlMatch = safeUrl.match(/https?:\/\/[^\s)]+/);
-  if (urlMatch) {
-    safeUrl = urlMatch[0];
+  
+  // 1. If they copy-pasted a markdown link like `[title](url)`, extract the URL between parentheses
+  const markdownMatch = safeUrl.match(/\]\((https:\/\/[^)]+)\)/);
+  if (markdownMatch) {
+    safeUrl = markdownMatch[1];
   } else {
-    safeUrl = safeUrl.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
-    if (safeUrl && !safeUrl.startsWith('http')) {
-      safeUrl = `https://${safeUrl}`;
+    // 2. If it's something like `url](url)`, split by `](` and take the first part
+    if (safeUrl.includes('](')) {
+      safeUrl = safeUrl.split('](')[0];
     }
+    // Clean up any remaining brackets or quotes
+    safeUrl = safeUrl.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
+  }
+
+  // 3. Ensure it has https://
+  if (safeUrl && !safeUrl.startsWith('http')) {
+    safeUrl = `https://${safeUrl}`;
   }
 
   return (
