@@ -20,6 +20,14 @@ export const SyllabusView = () => {
   const [materialTime, setMaterialTime] = useState<Record<string, number>>({});
   const [activeMaterial, setActiveMaterial] = useState<{ material: any, subject: any, chapter: any } | null>(null);
 
+  const [activeGroup, setActiveGroup] = useState<'all' | 1 | 2>('all');
+  const groupLabel = (g: number) => g === 1 ? 'Group 1' : 'Group 2';
+
+  const filteredSubjects = useMemo(() => {
+    if (activeGroup === 'all') return subjects;
+    return subjects.filter(s => s.group === activeGroup);
+  }, [activeGroup]);
+
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -251,9 +259,26 @@ export const SyllabusView = () => {
         </div>
       </div>
 
+      {/* ── Group Filter UI ── */}
+      <div className="flex bg-[#1B2430] rounded-xl border border-[#2D3A4B] overflow-hidden mb-2 w-full md:w-auto self-center">
+        {(['all', 1, 2] as const).map(g => (
+          <button
+            key={String(g)}
+            onClick={() => setActiveGroup(g)}
+            className={`px-6 py-2.5 text-xs font-semibold uppercase tracking-wider transition ${
+              activeGroup === g
+                ? 'text-[#FF9900] border-b-2 border-[#FF9900] bg-[#FF9900]/5'
+                : 'text-[#6B7280] hover:text-[#9CA3AF] hover:bg-[#232F3E]'
+            }`}
+          >
+            {g === 'all' ? 'Both Groups' : groupLabel(g)}
+          </button>
+        ))}
+      </div>
+
       {/* ── Interactive Subject Accordion Grid ── */}
       <div className="flex flex-col gap-4">
-        {subjects.map(sub => {
+        {filteredSubjects.map(sub => {
           const subColor = SUBJECT_COLORS[sub.id] || '#FF9900';
           const isExpanded = expandedSubjects.includes(sub.id) || searchQuery.trim().length > 0;
 

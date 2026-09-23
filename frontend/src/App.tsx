@@ -23,7 +23,7 @@ function App() {
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'syllabus' | 'planner' | 'settings'>('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
-  const [activeGroup, setActiveGroup] = useState<'all' | 1 | 2>('all');
+
 
   const {
     isRunning,
@@ -46,11 +46,6 @@ function App() {
     return subjects.find(s => s.id === selectedSubjectId) || null;
   }, [selectedSubjectId]);
 
-  const filteredSubjects = useMemo(() => {
-    if (activeGroup === 'all') return subjects;
-    return subjects.filter(s => s.group === activeGroup);
-  }, [activeGroup]);
-
   const formatTime = (ms: number) => {
     const totalSecs = Math.floor(ms / 1000);
     const hrs = Math.floor(totalSecs / 3600);
@@ -58,8 +53,6 @@ function App() {
     const secs = totalSecs % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-
-  const groupLabel = (g: number) => g === 1 ? 'Group 1' : 'Group 2';
 
   const navigateToDashboard = () => {
     setActiveTab('dashboard');
@@ -143,58 +136,6 @@ function App() {
 
       {/* ── Main Layout ── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row gap-8">
-
-        {/* ── Left Sidebar (Hidden if Settings or Planner) ── */}
-        {activeTab === 'dashboard' && (
-          <aside className="w-full md:w-[360px] flex flex-col gap-5 shrink-0">
-            <div className="bg-[#1B2430] rounded-xl border border-[#2D3A4B] overflow-hidden">
-              <div className="flex border-b border-[#2D3A4B]">
-                {(['all', 1, 2] as const).map(g => (
-                  <button
-                    key={String(g)}
-                    onClick={() => setActiveGroup(g)}
-                    className={`flex-1 text-xs font-semibold uppercase tracking-wider py-3 transition ${
-                      activeGroup === g
-                        ? 'text-[#FF9900] border-b-2 border-[#FF9900] bg-[#FF9900]/5'
-                        : 'text-[#6B7280] hover:text-[#9CA3AF]'
-                    }`}
-                  >
-                    {g === 'all' ? 'Both Groups' : groupLabel(g)}
-                  </button>
-                ))}
-              </div>
-
-              <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
-                {filteredSubjects.map((sub: any) => {
-                  const isActive = selectedSubjectId === sub.id;
-                  const activeColor = SUBJECT_COLORS[sub.id] || '#FF9900';
-                  return (
-                    <div
-                      key={sub.id}
-                      onClick={() => setSelectedSubjectId(sub.id)}
-                      className={`flex items-center justify-between px-5 py-4 border-b border-[#2D3A4B]/60 cursor-pointer transition group ${
-                        isActive ? 'bg-black/20' : 'hover:bg-[#232F3E]'
-                      }`}
-                      style={isActive ? { borderLeft: `2px solid ${activeColor}`, backgroundColor: `${activeColor}10` } : {}}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold transition" style={{ color: isActive ? activeColor : 'white' }}>
-                            {sub.id.toUpperCase()}
-                          </span>
-                          <span className="text-[10px] text-[#6B7280] uppercase tracking-wider">{sub.code}</span>
-                        </div>
-                        <p className="text-xs text-[#9CA3AF] mt-0.5 truncate">{sub.name}</p>
-                        <p className="text-[10px] text-[#6B7280] mt-1">{sub.chapters.length} chapters · {sub.chapters.reduce((a: number, c: any) => a + c.totalLectures, 0)} lectures</p>
-                      </div>
-                      <ChevronRight size={16} className={`transition shrink-0 ${isActive ? '' : 'text-[#6B7280]'}`} style={{ color: isActive ? activeColor : undefined }}/>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
-        )}
 
         {/* ── Right Content Area ── */}
         <div className="flex-1 w-full flex flex-col min-w-0">
