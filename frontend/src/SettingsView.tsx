@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Download, Upload, FileSpreadsheet, Calendar, Trash2, Database, AlertTriangle, X, Sparkles } from 'lucide-react';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
+import { supabase } from './supabaseClient';
 
 export const SettingsView = () => {
   const [examDate, setExamDate] = useState(localStorage.getItem('ascend_exam_date') || '');
@@ -116,10 +117,32 @@ export const SettingsView = () => {
     XLSX.writeFile(wb, fileName);
   };
 
-  const handleExportCurrent = () => {
-    const sessionsRaw = JSON.parse(localStorage.getItem('ascend_sessions') || '[]');
-    const progressRaw = JSON.parse(localStorage.getItem('ascend_syllabus_progress') || '{}');
-    const notesRaw = JSON.parse(localStorage.getItem('ascend_chapter_notes') || '{}');
+  const handleExportCurrent = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = session.user.id;
+
+    const { data: sessionsData } = await supabase.from('study_sessions').select('*').eq('user_id', userId);
+    const { data: progressData } = await supabase.from('chapter_progress').select('*').eq('user_id', userId);
+
+    const sessionsRaw = (sessionsData || []).map(r => ({
+      id: r.id,
+      subjectId: r.subject_id,
+      chapterId: r.chapter_id,
+      durationMinutes: r.duration_minutes,
+      timestamp: parseInt(r.session_timestamp),
+      type: r.session_type
+    }));
+
+    const progressRaw = (progressData || []).reduce((acc: any, r: any) => {
+      acc[r.chapter_id] = { confidence: r.confidence_stars, r1: r.r1, r2: r.r2, r3: r.r3, completed: r.completed };
+      return acc;
+    }, {});
+
+    const notesRaw = (progressData || []).reduce((acc: any, r: any) => {
+      if (r.note) acc[r.chapter_id] = r.note;
+      return acc;
+    }, {});
 
     let cutoff = 0;
     const now = Date.now();
@@ -138,13 +161,33 @@ export const SettingsView = () => {
     generateExcel(archive.data.sessions, archive.data.progress, archive.data.notes, `StudiAudit_Archive_${safeName}.xlsx`, 0);
   };
 
-  const executeArchiveAndReset = () => {
+  const executeArchiveAndReset = async () => {
     if (!archiveName.trim()) return;
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = session.user.id;
+
+    const { data: sessionsData } = await supabase.from('study_sessions').select('*').eq('user_id', userId);
+    const { data: progressData } = await supabase.from('chapter_progress').select('*').eq('user_id', userId);
+
     const currentData = {
-      sessions: JSON.parse(localStorage.getItem('ascend_sessions') || '[]'),
-      progress: JSON.parse(localStorage.getItem('ascend_syllabus_progress') || '{}'),
-      notes: JSON.parse(localStorage.getItem('ascend_chapter_notes') || '{}'),
+      sessions: (sessionsData || []).map(r => ({
+        id: r.id,
+        subjectId: r.subject_id,
+        chapterId: r.chapter_id,
+        durationMinutes: r.duration_minutes,
+        timestamp: parseInt(r.session_timestamp),
+        type: r.session_type
+      })),
+      progress: (progressData || []).reduce((acc: any, r: any) => {
+        acc[r.chapter_id] = { confidence: r.confidence_stars, r1: r.r1, r2: r.r2, r3: r.r3, completed: r.completed };
+        return acc;
+      }, {}),
+      notes: (progressData || []).reduce((acc: any, r: any) => {
+        if (r.note) acc[r.chapter_id] = r.note;
+        return acc;
+      }, {}),
       examDate: localStorage.getItem('ascend_exam_date') || ''
     };
 
@@ -158,8 +201,12 @@ export const SettingsView = () => {
     const updatedArchives = [...archives, newArchive];
     localStorage.setItem('ascend_archives', JSON.stringify(updatedArchives));
     
-    // Clear active keys
-    const keysToWipe = ['ascend_sessions', 'ascend_syllabus_progress', 'ascend_chapter_notes', 'ascend_revision_planner', 'ascend_exam_date'];
+    // Clear Supabase Data
+    await supabase.from('study_sessions').delete().eq('user_id', userId);
+    await supabase.from('chapter_progress').delete().eq('user_id', userId);
+
+    // Clear local active keys
+    const keysToWipe = ['ascend_revision_planner', 'ascend_exam_date'];
     keysToWipe.forEach(k => localStorage.removeItem(k));
 
     window.location.reload();
@@ -173,7 +220,7 @@ export const SettingsView = () => {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = new Uint8Array(event.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: 'array' });
@@ -201,7 +248,21 @@ export const SettingsView = () => {
               type: r['Session Type'] || r.Type || 'Self Study'
             };
           }).filter((s: any) => s.chapterId);
-          if (sessionsParsed.length > 0) localStorage.setItem('ascend_sessions', JSON.stringify(sessionsParsed));
+          
+          if (sessionsParsed.length > 0) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const inserts = sessionsParsed.map((s: any) => ({
+                user_id: session.user.id,
+                subject_id: s.subjectId,
+                chapter_id: s.chapterId,
+                duration_minutes: s.durationMinutes,
+                session_timestamp: s.timestamp.toString(),
+                session_type: s.type
+              }));
+              await supabase.from('study_sessions').insert(inserts);
+            }
+          }
         }
 
         const wsProgress = wb.Sheets['Syllabus Progress'];
@@ -219,8 +280,8 @@ export const SettingsView = () => {
             }
             if (chapId) {
               progressParsed[chapId] = {
-                confidence: Number(r['Confidence (Stars)']) || Number(r['Confidence Stars']) || 0,
-                stars: Number(r['Confidence (Stars)']) || Number(r['Confidence Stars']) || 0,
+                subject_id: Object.values(CA_FINAL_SYLLABUS).find((s:any) => s.chapters.some((c:any) => c.id === chapId))?.id,
+                confidence_stars: Number(r['Confidence (Stars)']) || Number(r['Confidence Stars']) || 0,
                 r1: Boolean(r.R1),
                 r2: Boolean(r.R2),
                 r3: Boolean(r.R3),
@@ -228,7 +289,23 @@ export const SettingsView = () => {
               };
             }
           });
-          if (Object.keys(progressParsed).length > 0) localStorage.setItem('ascend_syllabus_progress', JSON.stringify(progressParsed));
+          
+          if (Object.keys(progressParsed).length > 0) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const inserts = Object.entries(progressParsed).map(([chapId, p]: [string, any]) => ({
+                user_id: session.user.id,
+                subject_id: p.subject_id,
+                chapter_id: chapId,
+                confidence_stars: p.confidence_stars,
+                r1: p.r1,
+                r2: p.r2,
+                r3: p.r3,
+                completed: p.completed
+              }));
+              await supabase.from('chapter_progress').upsert(inserts, { onConflict: 'user_id,chapter_id' });
+            }
+          }
         }
 
         const wsNotes = wb.Sheets['Notes'];
@@ -246,7 +323,19 @@ export const SettingsView = () => {
             }
             if (chapId && r['Flashpoint Note']) notesParsed[chapId] = r['Flashpoint Note'];
           });
-          if (Object.keys(notesParsed).length > 0) localStorage.setItem('ascend_chapter_notes', JSON.stringify(notesParsed));
+          
+          if (Object.keys(notesParsed).length > 0) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const inserts = Object.entries(notesParsed).map(([chapId, note]: [string, any]) => ({
+                user_id: session.user.id,
+                subject_id: Object.values(CA_FINAL_SYLLABUS).find((s:any) => s.chapters.some((c:any) => c.id === chapId))?.id,
+                chapter_id: chapId,
+                note: note
+              }));
+              await supabase.from('chapter_progress').upsert(inserts, { onConflict: 'user_id,chapter_id' });
+            }
+          }
         }
 
         window.location.reload();
