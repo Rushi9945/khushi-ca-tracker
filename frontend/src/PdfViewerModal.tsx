@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTimer } from './TimerContext';
 import { Play, CheckCircle2 } from 'lucide-react';
+import Draggable from 'react-draggable';
 
 export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => {
   const [isReading, setIsReading] = useState(false);
@@ -130,31 +131,42 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
             />
             
             {/* Floating Active Timer HUD */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-              <div className="bg-[#0B0F19]/95 backdrop-blur-md border border-amber-500/30 rounded-2xl p-4 shadow-2xl shadow-amber-900/20 flex flex-col items-center w-[400px]">
-                
-                {/* Timer Display */}
-                <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-3xl font-mono font-bold text-white tracking-wider drop-shadow-md">
-                    {formatTime(elapsedTime)}
-                  </span>
-                  <span className="text-slate-400 font-mono text-lg">
-                    / {formatTime(targetMs)}
-                  </span>
-                </div>
+            <Draggable handle=".drag-handle">
+              <div className="absolute bottom-10 right-10 z-50">
+                <div className="bg-[#0B0F19]/95 backdrop-blur-md border border-amber-500/30 rounded-2xl p-4 shadow-2xl shadow-amber-900/20 flex flex-col items-center w-[440px]">
+                  
+                  {/* Drag Handle */}
+                  <div className="drag-handle cursor-grab active:cursor-grabbing w-full pb-3 mb-2 border-b border-slate-700/50 flex justify-center items-center opacity-70 hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold flex items-center gap-2">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-slate-500">
+                        <circle cx="9" cy="6" r="2"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="18" r="2"/><circle cx="15" cy="18" r="2"/>
+                      </svg>
+                      Drag me wherever you want!
+                    </span>
+                  </div>
 
-                {/* Progress Bar */}
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-3">
-                  <div 
-                    className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-1000"
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
+                  {/* Timer Display */}
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-3xl font-mono font-bold text-white tracking-wider drop-shadow-md">
+                      {formatTime(elapsedTime)}
+                    </span>
+                    <span className="text-slate-400 font-mono text-lg">
+                      / {formatTime(targetMs)}
+                    </span>
+                  </div>
 
-                {/* Motivational Text */}
-                <p className="text-amber-400 text-xs font-semibold text-center mt-2 leading-relaxed px-2">
-                  Time start now! Start reading now! Don't press the stop button, be committed to the target time you set.
-                </p>
+                  {/* Progress Bar */}
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-3">
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-1000"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+
+                  {/* Motivational Text */}
+                  <p className="text-amber-400 text-[15px] font-bold tracking-wide leading-relaxed text-center mt-5 mb-2 px-3 drop-shadow-[0_0_12px_rgba(251,191,36,0.25)]">
+                    Time start now! Start reading now! Don't press the stop button, be committed to the target time you set.
+                  </p>
 
                 {/* Complete & Log Action */}
                 <button 
@@ -166,6 +178,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
                 </button>
               </div>
             </div>
+            </Draggable>
           </>
         )}
       </div>
