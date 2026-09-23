@@ -4,6 +4,7 @@ import { SubjectBreakdown } from './SubjectBreakdown';
 import { SettingsView } from './SettingsView';
 import { PlannerView } from './PlannerView';
 import { SyllabusView } from './SyllabusView';
+import { Sidebar } from './Sidebar';
 import { SplashScreen } from './SplashScreen';
 import { Auth } from './Auth';
 import { AiStudyManager } from './AiStudyManager';
@@ -83,90 +84,51 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#131A22] text-[#FFFFFF] font-sans flex flex-col relative">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#06080C] text-white">
       {showSplash && <SplashScreen userName={userName} onComplete={() => {
         sessionStorage.setItem('hasSeenSplash', 'true');
         setShowSplash(false);
       }} />}
 
-      {/* ── Top Navigation ── */}
-      <header className="sticky top-0 z-50 w-full h-14 bg-[#1B2430]/85 backdrop-blur-md border-b border-[#2D3A4B]">
-        <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 shrink-0 cursor-pointer" onClick={navigateToDashboard}>
-            <span className="font-semibold text-lg tracking-tight">StudiAudit<span className="text-[#FF9900]">.</span></span>
-            <span className="hidden sm:inline text-xs px-2 py-0.5 rounded-full bg-[#FF9900]/10 text-[#FF9900] border border-[#FF9900]/20 font-medium">CA Final</span>
+      {/* ── Left Sidebar (Desktop) ── */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={(t) => { setActiveTab(t); setSelectedSubjectId(null); }} 
+        isLightMode={isLightMode} 
+        setIsLightMode={setIsLightMode} 
+      />
+
+      {/* ── Main Content Area ── */}
+      <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar pb-20 md:pb-0">
+        
+        {/* Floating Timer Widget */}
+        {activeChapter && (
+          <div className="absolute top-4 right-6 z-50 flex items-center gap-2.5 bg-[#1B2430]/95 backdrop-blur-md border border-amber-500/40 rounded-full pl-4 pr-1.5 py-1.5 shadow-xl shadow-amber-900/20">
+            <div className={`w-2 h-2 rounded-full shrink-0 ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+            <span className="font-mono text-sm text-amber-500 tabular-nums w-[68px] font-bold">{formatTime(elapsedTime)}</span>
+            <span className="text-xs text-slate-300 max-w-[150px] truncate hidden sm:inline">{activeSubject?.id?.toUpperCase()} · Ch {activeChapter.number}</span>
+            <div className="flex items-center gap-1 ml-2">
+              <button onClick={isRunning ? pauseTimer : resumeTimer} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-full transition" title={isRunning ? 'Pause' : 'Resume'}>
+                {isRunning ? <Pause size={14}/> : <Play size={14}/>}
+              </button>
+              <button onClick={stopAndSaveSession} className="p-1.5 bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 rounded-full transition" title="Stop & Log">
+                <Square size={14} fill="currentColor"/>
+              </button>
+            </div>
           </div>
+        )}
 
-          <div className="flex items-center gap-4 overflow-x-auto">
-            <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-[#9CA3AF]">
-              <button 
-                onClick={navigateToDashboard} 
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-2 ${activeTab === 'dashboard' && !selectedSubjectId ? 'text-[#FFFFFF] bg-[#232F3E]' : 'hover:text-[#FFFFFF] hover:bg-[#232F3E]'}`}
-              >
-                <LayoutDashboard size={15}/> Dashboard
-              </button>
-
-              {/* ── Active Timer Pill ── */}
-              {activeChapter && (
-                <div className="flex items-center gap-2.5 bg-[#131A22] border border-[#FF9900]/40 rounded-full pl-3 pr-1.5 py-1 shadow-md mx-1">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                  <span className="font-mono text-sm text-[#FF9900] tabular-nums w-[68px]">{formatTime(elapsedTime)}</span>
-                  <span className="text-xs text-[#9CA3AF] max-w-[130px] truncate hidden lg:inline">{activeSubject?.id?.toUpperCase()} · Ch {activeChapter.number}</span>
-                  <div className="flex items-center gap-0.5 ml-1">
-                    <button onClick={isRunning ? pauseTimer : resumeTimer} className="p-1.5 hover:bg-[#2D3A4B] rounded-full transition" title={isRunning ? 'Pause' : 'Resume'}>
-                      {isRunning ? <Pause size={13}/> : <Play size={13}/>}
-                    </button>
-                    <button onClick={stopAndSaveSession} className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded-full transition" title="Stop & Log">
-                      <Square size={13} fill="currentColor"/>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <button 
-                onClick={() => setIsLightMode(!isLightMode)} 
-                className="px-2 py-1.5 rounded-md transition flex items-center justify-center text-[#FF9900] hover:bg-[#FF9900]/10 mr-1"
-                title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}
-              >
-                {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
-              </button>
-
-              <button 
-                onClick={() => { setActiveTab('syllabus'); setSelectedSubjectId(null); }} 
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-2 ${activeTab === 'syllabus' ? 'text-[#FFFFFF] bg-[#232F3E]' : 'hover:text-[#FFFFFF] hover:bg-[#232F3E]'}`}
-              >
-                <BookOpen size={15}/> Syllabus
-              </button>
-              
-              <button 
-                onClick={() => { setActiveTab('planner'); setSelectedSubjectId(null); }}
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-2 ${activeTab === 'planner' ? 'text-[#FFFFFF] bg-[#232F3E]' : 'hover:text-[#FFFFFF] hover:bg-[#232F3E]'}`}
-              >
-                <Target size={15}/> Planner
-              </button>
-              
-              <button 
-                onClick={navigateToSettings} 
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-2 ${activeTab === 'settings' ? 'text-[#FFFFFF] bg-[#232F3E]' : 'hover:text-[#FFFFFF] hover:bg-[#232F3E]'}`}
-              >
-                <Settings size={15}/> Settings
-              </button>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* ── Main Layout ── */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row gap-8">
-
-        {/* ── Right Content Area ── */}
-        <div className="flex-1 w-full flex flex-col min-w-0">
+        <div className="w-full max-w-7xl mx-auto p-4 md:p-8 flex flex-col min-h-full">
           {activeTab === 'settings' ? (
             <SettingsView />
-          ) : activeTab === 'planner' ? (
+          ) : activeTab === 'planner' || activeTab === 'tasks' ? (
             <PlannerView />
           ) : activeTab === 'syllabus' ? (
             <SyllabusView />
+          ) : activeTab === 'calendar' || activeTab === 'revision' || activeTab === 'analytics' ? (
+            <div className="flex-1 flex items-center justify-center text-slate-500 text-lg font-medium">
+              Coming Soon
+            </div>
           ) : selectedSubject ? (
             <SubjectBreakdown subject={selectedSubject} onBack={() => setSelectedSubjectId(null)} />
           ) : (
@@ -174,7 +136,26 @@ function App() {
           )}
         </div>
       </main>
-      
+
+      {/* ── Mobile Bottom Nav ── */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#0B0F19] border-t border-slate-800/80 z-50 flex items-center justify-around py-3 px-2 pb-safe shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+        {[
+          { id: 'dashboard', icon: <LayoutDashboard size={20}/>, label: 'Dash' },
+          { id: 'tasks', icon: <Target size={20}/>, label: 'Tasks' },
+          { id: 'syllabus', icon: <BookOpen size={20}/>, label: 'Syllabus' },
+          { id: 'settings', icon: <Settings size={20}/>, label: 'Settings' }
+        ].map(item => (
+          <button
+            key={item.id}
+            onClick={() => { setActiveTab(item.id as any); setSelectedSubjectId(null); }}
+            className={`flex flex-col items-center gap-1 p-1 transition-colors ${activeTab === item.id ? 'text-amber-500' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            {item.icon}
+            <span className="text-[10px] font-semibold">{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
       <AiStudyManager />
     </div>
   );
