@@ -4,6 +4,7 @@ import { Calendar, Clock, Target, TrendingUp, Flame, BookOpen, Play, CheckCircle
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { useTimer } from './TimerContext';
 import { supabase } from './supabaseClient';
+import { StudyHeatmap } from './StudyHeatmap';
 
 interface Session {
   id: any;
@@ -438,7 +439,10 @@ export const DashboardGraphs = () => {
         )}
       </div>
 
-      {/* ── Row 3: Area Chart (Glowing Neon Yellow/Orange) ── */}
+      {/* ── Row 3: 90-Day Heatmap ── */}
+      <StudyHeatmap />
+
+      {/* ── Row 4: Area Chart (Glowing Neon Yellow/Orange) ── */}
       <div className="p-6 rounded-xl border border-[#3d2008] bg-[#0c0500] flex flex-col min-h-[300px] relative overflow-hidden">
         {/* Background Glowing Bokeh Effects */}
         <div className="absolute -top-10 -left-10 w-48 h-48 bg-[#fb8500]/20 rounded-full blur-[60px] pointer-events-none" />
