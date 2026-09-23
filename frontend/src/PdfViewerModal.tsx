@@ -58,10 +58,10 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
       </div>
 
       {/* Body Area */}
-      <div className="flex-1 w-full h-[calc(100vh-3.5rem)] relative">
+      <div className="flex-1 w-full h-[calc(100vh-3.5rem)] relative bg-[#131A22]">
         {!isReading ? (
           /* Study Intent Overlay */
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0B0F19] z-10">
+          <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="bg-slate-800 p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-slate-700">
               <h3 className="text-xl font-bold text-white mb-2">Ready to study?</h3>
               <p className="text-slate-400 mb-6">You are about to open: {material.title}</p>
@@ -76,8 +76,8 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
         ) : (
           /* Native PDF Iframe (Bypasses CORS and fixes scrollbars) */
           <iframe 
-            src={`${safeUrl}#toolbar=0&navpanes=0&view=FitH`} 
-            className="w-full h-full bg-white border-0"
+            src={safeUrl} 
+            className="w-full h-full border-0"
             title={material.title}
           />
         )}
