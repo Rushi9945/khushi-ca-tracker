@@ -455,8 +455,8 @@ export const DashboardGraphs = () => {
             No study sessions logged yet. Start a timer to see your activity here.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={220} className="relative z-10">
-            <AreaChart data={last7} margin={{ top: 15, right: 0, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={260} className="relative z-10">
+            <AreaChart data={last7} margin={{ top: 15, right: 20, left: -20, bottom: 10 }}>
               <defs>
                 <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#ffb703" stopOpacity={0.7}/>
@@ -477,8 +477,23 @@ export const DashboardGraphs = () => {
                   </feMerge>
                 </filter>
               </defs>
-              <XAxis dataKey="name" hide />
-              <YAxis hide />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffb703" vertical={false} opacity={0.15}/>
+              <XAxis 
+                dataKey="name" 
+                stroke="#ffb703" 
+                tick={{ fill: '#fb8500', fontSize: 12, fontWeight: 500 }} 
+                tickLine={false} 
+                axisLine={false} 
+                dy={10}
+              />
+              <YAxis 
+                stroke="#ffb703" 
+                tick={{ fill: '#fb8500', fontSize: 12, fontWeight: 500 }} 
+                tickLine={false} 
+                axisLine={false} 
+                unit="h"
+                dx={-10}
+              />
               <Tooltip 
                 cursor={{ stroke: '#ffb703', strokeWidth: 1, strokeDasharray: '4 4' }}
                 content={({ active, payload }) => {
