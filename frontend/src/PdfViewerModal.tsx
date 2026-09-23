@@ -13,6 +13,13 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
 
   if (!material) return null;
 
+  // Defensive URL cleanup in case the user pasted brackets or quotes in the database
+  let safeUrl = material.file_url || '';
+  safeUrl = safeUrl.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
+  if (safeUrl && !safeUrl.startsWith('http')) {
+    safeUrl = `https://${safeUrl}`;
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#0B0F19] w-screen h-screen overflow-hidden">
       {/* Header Bar */}
@@ -20,7 +27,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
         <h2 className="text-white font-semibold truncate pr-4">{material.title}</h2>
         <div className="flex items-center space-x-4 shrink-0">
           <a 
-            href={material.file_url} 
+            href={safeUrl} 
             target="_blank" 
             rel="noopener noreferrer" 
             className="text-sm text-amber-500 hover:text-amber-400 transition"
@@ -55,7 +62,7 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
         ) : (
           /* Native PDF Embed (Bypasses CORS) */
           <embed 
-            src={`${material.file_url}#toolbar=0&navpanes=0&view=FitH`} 
+            src={`${safeUrl}#toolbar=0&navpanes=0&view=FitH`} 
             type="application/pdf" 
             className="w-full h-full bg-white"
           />
