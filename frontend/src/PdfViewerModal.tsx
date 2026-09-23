@@ -13,25 +13,25 @@ export const PdfViewerModal = ({ material, subject, chapter, onClose }: any) => 
 
   if (!material) return null;
 
-  // Extremely robust URL cleanup for Supabase storage URLs
-  let safeUrl = material.file_url || '';
-  
-  // 1. If they copy-pasted a markdown link like `[title](url)`, extract the URL between parentheses
-  const markdownMatch = safeUrl.match(/\]\((https:\/\/[^)]+)\)/);
-  if (markdownMatch) {
-    safeUrl = markdownMatch[1];
-  } else {
-    // 2. If it's something like `url](url)`, split by `](` and take the first part
-    if (safeUrl.includes('](')) {
-      safeUrl = safeUrl.split('](')[0];
+  // Aggressive URL extractor that handles spaces in Supabase file paths
+  let safeUrl = '';
+  if (material?.file_url) {
+    let rawString = String(material.file_url).trim();
+    
+    // If it's a markdown link [Title](URL) or corrupted Title](URL)
+    if (rawString.includes('](')) {
+      // Split by `](` and take the second part (the URL)
+      const parts = rawString.split('](');
+      let urlPart = parts[1]; // Usually the URL is the second part
+      
+      // If it ends with ')', remove the trailing ')'
+      if (urlPart.endsWith(')')) {
+        urlPart = urlPart.slice(0, -1);
+      }
+      safeUrl = urlPart.trim();
+    } else {
+      safeUrl = rawString;
     }
-    // Clean up any remaining brackets or quotes
-    safeUrl = safeUrl.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
-  }
-
-  // 3. Ensure it has https://
-  if (safeUrl && !safeUrl.startsWith('http')) {
-    safeUrl = `https://${safeUrl}`;
   }
 
   return (
