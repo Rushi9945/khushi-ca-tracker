@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, CheckSquare, Calendar, BookOpen, RotateCcw, BarChart2, Settings, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Calendar, BookOpen, RotateCcw, BarChart2, Settings, Sun, Moon, ClipboardList } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isLig
     { id: 'syllabus', label: 'Syllabus', icon: <BookOpen size={20} /> },
     { id: 'revision', label: 'Revision', icon: <RotateCcw size={20} /> },
     { id: 'analytics', label: 'Test Analytics', icon: <BarChart2 size={20} /> },
+    { id: 'exams', label: 'CA Final Exams', icon: <ClipboardList size={20} /> },
     { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
   ];
 

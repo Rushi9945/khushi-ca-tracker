@@ -6,6 +6,7 @@ import { PlannerView } from './PlannerView';
 import { SyllabusView } from './SyllabusView';
 import { Revision } from './Revision';
 import { TestAnalytics } from './TestAnalytics';
+import { AlgorithmicExams } from './AlgorithmicExams';
 import { Tasks } from './tasks/Tasks';
 import { CalendarPlanner } from './tasks/CalendarPlanner';
 import { Sidebar } from './Sidebar';
@@ -135,6 +136,8 @@ function App() {
             <CalendarPlanner />
           ) : activeTab === 'analytics' ? (
             <TestAnalytics />
+          ) : activeTab === 'exams' ? (
+            <AlgorithmicExams />
           ) : selectedSubject ? (
             <SubjectBreakdown subject={selectedSubject} onBack={() => setSelectedSubjectId(null)} />
           ) : (

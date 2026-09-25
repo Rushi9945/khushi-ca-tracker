@@ -72,6 +72,9 @@ export const TestAnalytics = () => {
   const group2 = evaluateGroup(2);
   const totalQuestions = QUESTION_DATA.reduce((sum, d) => sum + d.value, 0);
 
+  const lowestSubject = [...MOCK_SCORES].sort((a, b) => a.score - b.score)[0];
+  const lowestChapter = [...WEAK_CHAPTERS].sort((a, b) => a.percentage - b.percentage)[0];
+
   const getScoreColor = (score: number) => {
     if (score >= 60) return 'text-emerald-500';
     if (score >= 40) return 'text-amber-500';
@@ -276,6 +279,33 @@ export const TestAnalytics = () => {
           </div>
           
         </div>
+
+        {/* ── Analytics Upgrade: Dynamic AI Summary & Action Plan ── */}
+        <div className="lg:col-span-2 mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-[#1B2430] border border-[#2D3A4B] rounded-2xl p-6 shadow-lg flex flex-col gap-3">
+            <h3 className="text-amber-500 font-bold text-lg flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"/>
+              Algorithm's End Summary
+            </h3>
+            <p className="text-slate-300 leading-relaxed text-sm">
+              Based on your recent sessions, your core weakness is currently <strong className="text-white">{lowestSubject.name} ({lowestSubject.id})</strong> (averaging <strong className="text-red-500">{lowestSubject.score}%</strong>), specifically struggling with <strong className="text-white">{lowestChapter.title}</strong>.
+            </p>
+          </div>
+
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 shadow-lg flex flex-col gap-3 relative overflow-hidden">
+            <div className="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
+              <AlertCircle size={100} className="text-red-500" />
+            </div>
+            <h3 className="text-red-500 font-bold text-lg flex items-center gap-2 z-10">
+              <XCircle size={18}/>
+              What You Need To Do Right Now
+            </h3>
+            <p className="text-red-200/90 leading-relaxed text-sm z-10">
+              <strong className="text-red-400">Action Required:</strong> To secure a Group {lowestSubject.group} pass, you must clear the 40% threshold in {lowestSubject.id}. Halt new chapter progression and immediately allocate 2 hours to a targeted mock exam on <strong>{lowestChapter.title}</strong>.
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );
