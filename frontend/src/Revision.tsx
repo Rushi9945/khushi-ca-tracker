@@ -277,10 +277,26 @@ export const Revision = () => {
               </div>
 
               {/* Tooltip Popup */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 p-3 bg-[#131A22] border border-red-500/30 shadow-[0_10px_30px_rgba(239,68,68,0.2)] text-slate-200 text-xs rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                <p className="font-bold text-red-500 mb-1 flex items-center gap-1.5"><AlertCircle size={12}/> Automated Pipeline</p>
-                <p className="leading-relaxed">This Spaced Repetition engine is fully automated! Chapters will organically jump here <strong className="text-white">exactly 3, 14, or 30 days</strong> after you study them. You cannot manually add items here—trust the algorithm!</p>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-[1px] border-4 border-transparent border-b-red-500/30"></div>
+              <div className="absolute top-full left-1/2 -translate-x-[15%] md:-translate-x-1/2 mt-2 w-80 p-4 bg-[#131A22] border border-red-500/40 shadow-[0_10px_40px_rgba(239,68,68,0.3)] text-slate-300 text-xs rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                <p className="font-bold text-red-500 text-sm mb-3 flex items-center gap-1.5 border-b border-red-500/20 pb-2"><AlertCircle size={14}/> How this System Works</p>
+                
+                <div className="flex flex-col gap-3">
+                  <p className="leading-relaxed">
+                    This Spaced Repetition (SRS) engine is <strong className="text-white">fully automated</strong> based on your actual study history. You cannot manually add items here—simply read your chapters in the Content Library, and the algorithm handles the rest!
+                  </p>
+
+                  <div className="bg-[#1B2430] p-2.5 rounded-lg border border-[#2D3A4B]">
+                    <p className="font-bold text-amber-500 mb-1 flex items-center gap-1.5"><Clock size={12}/> Due Today</p>
+                    <p className="text-[11px] leading-snug text-slate-400">Chapters that have hit their exact 3-day (R1), 14-day (R2), or 30-day (R3) memory milestone today. Revise them now to keep your streak going!</p>
+                  </div>
+
+                  <div className="bg-red-500/10 p-2.5 rounded-lg border border-red-500/20">
+                    <p className="font-bold text-red-500 mb-1 flex items-center gap-1.5"><AlertCircle size={12}/> Overdue</p>
+                    <p className="text-[11px] leading-snug text-red-200/80">You missed the scheduled revision date! These chapters will stay trapped here until you finally revise them and catch up.</p>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-full left-[15%] md:left-1/2 -translate-x-1/2 -mb-[1px] border-4 border-transparent border-b-red-500/40"></div>
               </div>
             </div>
 
