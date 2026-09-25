@@ -45,3 +45,31 @@ body.light-mode video,
 body.light-mode .preserve-colors {
   filter: invert(1) hue-rotate(180deg);
 }
+
+/* Premium Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a; /* matches Tailwind slate-900 */
+  border-radius: 100vh;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #f59e0b; /* matches Tailwind amber-500 */
+  border-radius: 100vh;
+  border: 2px solid #0f172a; /* creates a padded "floating" effect */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fbbf24; /* matches Tailwind amber-400 */
+}
+
+/* For Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #f59e0b #0f172a;
+}
+
