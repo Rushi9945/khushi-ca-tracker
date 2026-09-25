@@ -5,6 +5,7 @@ import { SettingsView } from './SettingsView';
 import { PlannerView } from './PlannerView';
 import { SyllabusView } from './SyllabusView';
 import { Revision } from './Revision';
+import { TestAnalytics } from './TestAnalytics';
 import { Tasks } from './tasks/Tasks';
 import { CalendarPlanner } from './tasks/CalendarPlanner';
 import { Sidebar } from './Sidebar';
@@ -133,9 +134,7 @@ function App() {
           ) : activeTab === 'calendar' ? (
             <CalendarPlanner />
           ) : activeTab === 'analytics' ? (
-            <div className="flex-1 flex items-center justify-center text-slate-500 text-lg font-medium">
-              Coming Soon
-            </div>
+            <TestAnalytics />
           ) : selectedSubject ? (
             <SubjectBreakdown subject={selectedSubject} onBack={() => setSelectedSubjectId(null)} />
           ) : (
