@@ -4,6 +4,8 @@ import { SubjectBreakdown } from './SubjectBreakdown';
 import { SettingsView } from './SettingsView';
 import { PlannerView } from './PlannerView';
 import { SyllabusView } from './SyllabusView';
+import { Tasks } from './tasks/Tasks';
+import { CalendarPlanner } from './tasks/CalendarPlanner';
 import { Sidebar } from './Sidebar';
 import { SplashScreen } from './SplashScreen';
 import { Auth } from './Auth';
@@ -122,10 +124,12 @@ function App() {
           {activeTab === 'settings' ? (
             <SettingsView />
           ) : activeTab === 'planner' || activeTab === 'tasks' ? (
-            <PlannerView />
+            <Tasks />
           ) : activeTab === 'syllabus' ? (
             <SyllabusView />
-          ) : activeTab === 'calendar' || activeTab === 'revision' || activeTab === 'analytics' ? (
+          ) : activeTab === 'calendar' ? (
+            <CalendarPlanner />
+          ) : activeTab === 'revision' || activeTab === 'analytics' ? (
             <div className="flex-1 flex items-center justify-center text-slate-500 text-lg font-medium">
               Coming Soon
             </div>
