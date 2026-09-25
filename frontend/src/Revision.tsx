@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
 import { PdfViewerModal } from './PdfViewerModal';
-import { AlertCircle, Clock, Calendar, CheckCircle2, Play, Activity } from 'lucide-react';
+import { AlertCircle, Clock, Calendar, CheckCircle2, Play, Activity, Info } from 'lucide-react';
 import { SUBJECT_COLORS } from './DashboardGraphs';
 
 const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
@@ -255,9 +255,35 @@ export const Revision = () => {
 
         {/* Column 2: Action */}
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 border-b border-[#2D3A4B] pb-2">
+          <div className="flex items-center gap-2 border-b border-[#2D3A4B] pb-2 relative z-20">
             <AlertCircle size={18} className="text-red-500" />
             <h2 className="font-bold text-lg text-white">Due Today & Overdue</h2>
+            
+            {/* The Tooltip/Info Button */}
+            <div className="relative group flex items-center ml-1">
+              <button className="text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 p-1 rounded-full transition-colors">
+                <Info size={16} />
+              </button>
+
+              {/* Pointing Arrow & Text */}
+              <div className="absolute -top-7 left-1 flex items-end gap-1 text-red-500 pointer-events-none w-32 origin-bottom-left animate-pulse">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rotate-90 translate-y-2 -translate-x-1">
+                  <path d="M10 9l-6 6 6 6"/>
+                  <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+                </svg>
+                <span className="text-[10px] font-black uppercase tracking-wider text-red-500 leading-tight bg-[#06080C]/80 px-1 rounded backdrop-blur-sm -ml-1">
+                  Click for info
+                </span>
+              </div>
+
+              {/* Tooltip Popup */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 p-3 bg-[#131A22] border border-red-500/30 shadow-[0_10px_30px_rgba(239,68,68,0.2)] text-slate-200 text-xs rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                <p className="font-bold text-red-500 mb-1 flex items-center gap-1.5"><AlertCircle size={12}/> Automated Pipeline</p>
+                <p className="leading-relaxed">This Spaced Repetition engine is fully automated! Chapters will organically jump here <strong className="text-white">exactly 3, 14, or 30 days</strong> after you study them. You cannot manually add items here—trust the algorithm!</p>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-[1px] border-4 border-transparent border-b-red-500/30"></div>
+              </div>
+            </div>
+
             <span className="bg-red-500/20 text-red-400 text-xs font-bold px-2 py-0.5 rounded-full ml-auto">{actionItems.length}</span>
           </div>
 
