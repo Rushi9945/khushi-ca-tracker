@@ -1,9 +1,8 @@
 import React from 'react';
-import femaleSketch from './assets/female-study-sketch.jpg';
 
 export const AnimatedLoader = ({ name, gender }: { name: string, gender: string }) => {
   return (
-    <div className="bg-[#06080C] flex flex-col items-center justify-center h-screen w-screen z-50 fixed inset-0 overflow-hidden">
+    <div className="bg-[#06080C] flex flex-col items-center justify-center h-screen w-screen z-50 overflow-hidden">
       
       <h1 className="text-4xl font-bold text-amber-500 mb-6 tracking-wide drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">
         CA {name.toUpperCase()}
@@ -34,7 +33,7 @@ export const AnimatedLoader = ({ name, gender }: { name: string, gender: string 
       </style>
 
       <img 
-        src={femaleSketch} 
+        src="/female-study-sketch.jpg" 
         alt="Student Studying" 
         className="w-[350px] md:w-[450px] h-auto object-contain rounded-xl shadow-2xl transition-all duration-1000 ease-in-out custom-invert animate-fade-in-up" 
       />
