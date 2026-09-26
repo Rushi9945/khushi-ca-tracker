@@ -56,7 +56,11 @@ const MOCK_QUESTIONS = [
   }
 ];
 
-export const AlgorithmicExams = () => {
+interface AlgorithmicExamsProps {
+  onReviewTopics?: () => void;
+}
+
+export const AlgorithmicExams: React.FC<AlgorithmicExamsProps> = ({ onReviewTopics }) => {
   const [examState, setExamState] = useState<'idle' | 'running' | 'submitted'>('idle');
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -190,7 +194,10 @@ export const AlgorithmicExams = () => {
                 <RefreshCw size={18} /> Give Another Fast Exam
               </button>
               {incorrectQuestions.length > 0 && (
-                <button className="w-full sm:flex-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                <button 
+                  onClick={onReviewTopics}
+                  className="w-full sm:flex-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                >
                   <BookOpen size={18} /> Review Weak Topics
                 </button>
               )}

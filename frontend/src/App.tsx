@@ -137,7 +137,12 @@ function App() {
           ) : activeTab === 'analytics' ? (
             <TestAnalytics />
           ) : activeTab === 'exams' ? (
-            <AlgorithmicExams />
+            <AlgorithmicExams 
+              onReviewTopics={() => {
+                setActiveTab('syllabus');
+                setSelectedSubjectId('fr');
+              }}
+            />
           ) : selectedSubject ? (
             <SubjectBreakdown subject={selectedSubject} onBack={() => setSelectedSubjectId(null)} />
           ) : (
