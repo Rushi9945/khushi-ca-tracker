@@ -5,7 +5,7 @@ export const AnimatedLoader = ({ name, gender }: { name: string, gender: string 
     <div className="bg-[#06080C] flex flex-col items-center justify-center h-screen w-screen z-50 overflow-hidden">
       
       <h1 className="text-4xl font-bold text-amber-500 mb-6 tracking-wide drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">
-        CA {name.toUpperCase()}
+        CA {name}
       </h1>
 
       <style>
@@ -38,7 +38,7 @@ export const AnimatedLoader = ({ name, gender }: { name: string, gender: string 
         className="w-[350px] md:w-[450px] h-auto object-contain rounded-xl shadow-2xl transition-all duration-1000 ease-in-out custom-invert animate-fade-in-up" 
       />
 
-      <p className="text-sm text-slate-400 mt-8 animate-pulse font-bold tracking-widest uppercase">
+      <p className="text-sm text-slate-400 mt-8 animate-pulse">
         your finalist preparation dashboard is loading ..
       </p>
 
