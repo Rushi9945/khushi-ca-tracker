@@ -12,6 +12,8 @@ import { CalendarPlanner } from './tasks/CalendarPlanner';
 import { Sidebar } from './Sidebar';
 import { SplashScreen } from './SplashScreen';
 import { Auth } from './Auth';
+import { Login } from './Login';
+import { AnimatedLoader } from './AnimatedLoader';
 import { AiStudyManager } from './AiStudyManager';
 import { useTimer } from './TimerContext';
 import { CA_FINAL_SYLLABUS } from './data/caFinalSyllabus';
@@ -22,6 +24,9 @@ const subjects = Object.values(CA_FINAL_SYLLABUS) as any[];
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState('');
+  const [gender, setGender] = useState('Male');
+  const [phone, setPhone] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState('');
   const [showSplash, setShowSplash] = useState(() => {
     return !sessionStorage.getItem('hasSeenSplash');
@@ -55,10 +60,17 @@ function App() {
     stopAndSaveSession
   } = useTimer();
 
-  const handleLogin = (name: string, id: string) => {
+  const handleLogin = (name: string, gen: string, ph: string) => {
     setUserName(name);
-    setUserId(id);
-    setIsAuthenticated(true);
+    setGender(gen);
+    setPhone(ph);
+    setUserId('local-user');
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      setIsLoading(false);
+      setIsAuthenticated(true);
+    }, 4000);
   };
 
   const selectedSubject = useMemo(() => {
@@ -84,8 +96,12 @@ function App() {
     setSelectedSubjectId(null);
   };
 
-  if (!isAuthenticated) {
-    return <Auth onLogin={handleLogin} />;
+  if (!isAuthenticated && !isLoading) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  if (isLoading) {
+    return <AnimatedLoader name={userName} gender={gender} />;
   }
 
   return (
