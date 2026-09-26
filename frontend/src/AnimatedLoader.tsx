@@ -1,4 +1,5 @@
 import React from 'react';
+import femaleSketch from './assets/female-study-sketch.jpg';
 
 export const AnimatedLoader = ({ name, gender }: { name: string, gender: string }) => {
   return (
@@ -33,7 +34,7 @@ export const AnimatedLoader = ({ name, gender }: { name: string, gender: string 
       </style>
 
       <img 
-        src="/female-study-sketch.jpg" 
+        src={femaleSketch} 
         alt="Student Studying" 
         className="w-[350px] md:w-[450px] h-auto object-contain rounded-xl shadow-2xl transition-all duration-1000 ease-in-out custom-invert animate-fade-in-up" 
       />
